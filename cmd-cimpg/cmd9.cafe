@@ -1,0 +1,13 @@
+load tls.cafe .
+load proofscores/inv9.cafe .
+
+set-cores 4 .
+
+set-output generated-proofscripts/inv9.cafe .
+
+:infer-proof inv9 .
+
+:save-proof .
+
+eof
+load cmd-cimpg/cmd9.cafe .

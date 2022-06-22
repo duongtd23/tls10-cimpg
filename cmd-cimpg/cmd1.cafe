@@ -1,0 +1,17 @@
+load tls.cafe .
+load proofscores/inv1.cafe .
+
+set-cores 4 .
+
+set-output generated-proofscripts/inv1.cafe .
+
+:proven(inv2(P:Protocol, E:EncPms))
+:proven(inv9(P:Protocol, P2:Prin, P1:PubKey))
+
+:infer-proof tls .
+
+:save-proof .
+
+eof
+
+load cmd-cimpg/cmd1.cafe .

@@ -1,0 +1,15 @@
+load tls.cafe .
+load proofscores/inv7.cafe .
+
+set-cores 4 .
+
+set-output generated-proofscripts/inv7.cafe .
+
+:proven(lm1(M1:Msg, M2:Msg, NW:Network))
+
+:infer-proof inv7 .
+
+:save-proof .
+
+eof
+load cmd-cimpg/cmd7.cafe .

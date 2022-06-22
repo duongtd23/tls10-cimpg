@@ -1,0 +1,22 @@
+load tls.cafe .
+load proofscores/inv18.cafe .
+
+set-cores 4 .
+
+set-output generated-proofscripts/inv18.cafe .
+
+:proven(lm1(M1:Msg, M2:Msg, NW:Network))
+:proven(inv1(P:Protocol, PMS:Pms))
+:proven(inv5(P:Protocol, A:Prin, B:Prin, B1:Prin, R1:Rand, R2:Rand, C:Choice, I:Sid, S:Secret))
+:proven(inv6(P:Protocol, A:Prin, B:Prin, R1:Rand, R2:Rand, C:Choice, I:Sid, S:Secret))
+:proven(inv14(P:Protocol, A:Prin, B:Prin, R1:Rand, R2:Rand, C:Choice, I:Sid, S:Secret))
+:proven(inv15(P:Protocol, A:Prin, B:Prin, R1:Rand, C:Choice, I:Sid))
+:proven(inv16(P:Protocol, A:Prin, B:Prin, B1:Prin, R1:Rand, R2:Rand, C:Choice, I:Sid, S:Secret))
+
+:infer-proof inv18 .
+
+:save-proof .
+
+eof
+
+load cmd-cimpg/cmd18.cafe .

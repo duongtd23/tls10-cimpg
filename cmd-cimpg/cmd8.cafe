@@ -1,0 +1,16 @@
+load tls.cafe .
+load proofscores/inv8.cafe .
+
+set-cores 4 .
+
+set-output generated-proofscripts/inv8.cafe .
+
+:proven(lm1(M1:Msg, M2:Msg, NW:Network))
+
+:infer-proof inv8 .
+
+:save-proof .
+
+eof
+
+load cmd-cimpg/cmd8.cafe .

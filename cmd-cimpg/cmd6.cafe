@@ -1,0 +1,16 @@
+load tls.cafe .
+load proofscores/inv6.cafe .
+
+set-cores 4 .
+
+set-output generated-proofscripts/inv6.cafe .
+
+:proven(inv1(P:Protocol, PMS:Pms))
+
+:infer-proof inv6 .
+
+:save-proof .
+
+eof
+
+load cmd-cimpg/cmd6.cafe .

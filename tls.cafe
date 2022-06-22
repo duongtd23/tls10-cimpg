@@ -1,0 +1,1385 @@
+--
+-- T. Dierks and C. Allen: The TLS Protocol: Version 1.0. 
+-- Request for Comments: 2246, 
+-- available at ftp://ftp.isi.edu/in-notes/rfc2246.txt.
+--
+--
+-- ** Abstract version of TLS **
+--
+-- ClientHello     A --> B  Rand_A, ListOfChoices
+-- ServerHello     B --> A  Rand_B, SID, Choice
+-- Certificate     B --> A  Cert_B
+-- KeyExchange     A --> B  E_{K_B}(PMS)
+-- ClientFinished  A --> B  E_ClientKey(ClientFinish)
+-- ServerFinished  B --> A  E_ServerKey(ServerFinish)
+--
+-- ClientHello2    A --> B  Rand_A, SID
+-- ServerHello2    B --> A  Rand_B, SID, Choice
+-- ClientFinished2 A --> B  E_ClientKey(ClientFinish2)
+-- ServerFinished2 A --> B  E_ServerKey(ServerFinish2)
+--
+-- Cert_B    : B, K_B, S_CA(B, K_B)
+-- ClientKey : K(A, PMS, Rand_A, Rand_B)
+-- ServerKey : K(B, PMS, Rand_A, Rand_B)
+-- ClientFinish  : A, B, SID, ListOfChoices, Choice, Rand_A, Rand_B, PMS
+-- ServerFinish  : A, B, SID, ListOfChoices, Choice, Rand_A, Rand_B, PMS
+-- ClientFinish2 : A, B, SID, Choice, Rand_A, Rand_B, PMS
+-- ServerFinish2 : A, B, SID, Choice, Rand_A, Rand_B, PMS
+--
+
+mod! PRINCIPAL {
+  [Prin]
+  -- op _=_ : Prin Prin -> Bool {comm}
+  -- var A : Prin
+  -- eq (A = A) = true .
+  op intruder : -> Prin
+  op ca : -> Prin
+}
+
+-- mod! SPECIALPRINCIPAL {
+--   pr(PRINCIPAL)
+--   op intruder : -> Prin
+--   op ca : -> Prin
+--   -- eq (intruder = ca) = false .
+-- }
+
+mod! RANDOM {
+  [Rand]
+  -- op _=_ : Rand Rand -> Bool {comm}
+  -- var R : Rand
+  -- eq (R = R) = true .
+}
+
+mod! CHOICE {
+  [Choice]
+  -- op _=_ : Choice Choice -> Bool {comm}
+  -- var C : Choice 
+  -- eq (C = C) = true .
+}
+
+mod! LISTOFCHOICES {
+  pr(CHOICE)
+  [ListOfChoices]
+  op _\in_ : Choice ListOfChoices -> Bool 
+  -- op _=_ : ListOfChoices ListOfChoices -> Bool {comm}
+  -- var L : ListOfChoices
+  -- eq (L = L) = true .
+}
+
+mod! SID {
+  [Sid]
+  -- op _=_ : Sid Sid -> Bool {comm}
+  -- var I : Sid
+  -- eq (I = I) = true .
+}
+
+mod! SECRET {
+  [Secret]
+  -- op _=_ : Secret Secret -> Bool {comm}
+  -- var S : Secret
+  -- eq (S = S) = true .
+}
+
+mod! PMS {
+  pr(PRINCIPAL + SECRET)
+  [Pms]
+  op pms : Prin Prin Secret -> Pms
+  op client : Pms -> Prin
+  op server : Pms -> Prin
+  op secret : Pms -> Secret
+  -- op _=_ : Pms Pms -> Bool {comm}
+  var PMS : Pms
+  vars A B A1 A2 B1 B2 : Prin
+  vars S S1 S2 : Secret
+  eq client(pms(A,B,S)) = A .
+  eq server(pms(A,B,S)) = B .
+  eq secret(pms(A,B,S)) = S .
+  -- eq (PMS = PMS) = true .
+  eq (pms(A1,B1,S1) = pms(A2,B2,S2)) 
+     = (A1 = A2 and B1 = B2 and S1 = S2) .
+}
+
+mod! PUBLICKEY {
+  pr(PRINCIPAL)
+  [PubKey]
+  op k : Prin -> PubKey
+  op owner : PubKey -> Prin
+  -- op _=_ : PubKey PubKey -> Bool {comm}
+  var PK : PubKey
+  vars A A1 A2 : Prin
+  eq owner(k(A)) = A .
+  -- eq (PK = PK) = true .
+  eq (k(A1) = k(A2)) = (A1 = A2) .
+}
+
+mod! SIGNATURE {
+  pr(PRINCIPAL + PUBLICKEY)
+  [Sig]
+  op sig : Prin Prin PubKey -> Sig
+  op signer : Sig -> Prin
+  op server : Sig -> Prin
+  op pubkey : Sig -> PubKey
+  -- op _=_ : Sig Sig -> Bool {comm}
+  var G : Sig
+  vars A B A1 A2 B1 B2 : Prin
+  vars PK PK1 PK2 : PubKey
+  eq signer(sig(A,B,PK)) = A .
+  eq server(sig(A,B,PK)) = B .
+  eq pubkey(sig(A,B,PK)) = PK .
+  -- eq (G = G) = true .
+  eq (sig(A1,B1,PK1) = sig(A2,B2,PK2)) 
+     = (A1 = A2 and B1 = B2 and PK1 = PK2) .
+}
+
+mod! CERTIFICATE {
+  pr(PRINCIPAL + PUBLICKEY + SIGNATURE)
+  [Cert]
+  op cert : Prin PubKey Sig -> Cert
+  op server : Cert -> Prin
+  op pubkey : Cert -> PubKey
+  op sig    : Cert -> Sig
+  -- op _=_ : Cert Cert -> Bool {comm}
+  var C : Cert 
+  vars A A1 A2 : Prin
+  vars PK PK1 PK2 : PubKey
+  vars G G1 G2 : Sig
+  eq server(cert(A,PK,G)) = A .
+  eq pubkey(cert(A,PK,G)) = PK .
+  eq sig(cert(A,PK,G)) = G .
+  -- eq (C = C) = true .
+  eq (cert(A1,PK1,G1) = cert(A2,PK2,G2)) 
+     = (A1 = A2 and PK1 = PK2 and G1 = G2) .
+}
+
+mod! KEY {
+  pr(PRINCIPAL + PMS + RANDOM)
+  [Key]
+  op k : Prin Pms Rand Rand -> Key
+  op prin  : Key -> Prin
+  op pms   : Key -> Pms
+  op crand : Key -> Rand
+  op srand : Key -> Rand
+  -- op _=_ : Key Key -> Bool {comm}
+  var K : Key
+  vars A A1 A2 : Prin
+  vars PMS PMS1 PMS2 : Pms
+  vars CR SR CR1 CR2 SR1 SR2 : Rand
+  eq prin(k(A,PMS,CR,SR)) = A .
+  eq pms(k(A,PMS,CR,SR)) = PMS .
+  eq crand(k(A,PMS,CR,SR)) = CR .
+  eq srand(k(A,PMS,CR,SR)) = SR .
+  -- eq (K = K) = true .
+  eq (k(A1,PMS1,CR1,SR1) = k(A2,PMS2,CR2,SR2)) 
+     = (A1 = A2 and PMS1 = PMS2 and CR1 = CR2 and SR1 = SR2) .
+}
+
+mod! CFINISH {
+  pr(PRINCIPAL + SID + CHOICE + LISTOFCHOICES + RANDOM + PMS)
+  [CFinish]
+  op cfin : Prin Prin Sid ListOfChoices Choice Rand Rand Pms -> CFinish
+  op client : CFinish -> Prin
+  op server : CFinish -> Prin
+  op sid    : CFinish -> Sid
+  op list   : CFinish -> ListOfChoices
+  op choice : CFinish -> Choice
+  op crand  : CFinish -> Rand
+  op srand  : CFinish -> Rand
+  op pms    : CFinish -> Pms
+  -- op _=_ : CFinish CFinish -> Bool {comm}
+  var F : CFinish
+  vars A B A1 A2 B1 B2 : Prin
+  vars I I1 I2 : Sid
+  vars L L1 L2 : ListOfChoices
+  vars C C1 C2 : Choice
+  vars CR SR CR1 CR2 SR1 SR2 : Rand
+  vars PMS PMS1 PMS2 : Pms
+  eq client(cfin(A,B,I,L,C,CR,SR,PMS)) = A .
+  eq server(cfin(A,B,I,L,C,CR,SR,PMS)) = B .
+  eq sid(cfin(A,B,I,L,C,CR,SR,PMS)) = I .
+  eq list(cfin(A,B,I,L,C,CR,SR,PMS)) = L .
+  eq choice(cfin(A,B,I,L,C,CR,SR,PMS)) = C .
+  eq crand(cfin(A,B,I,L,C,CR,SR,PMS)) = CR .
+  eq srand(cfin(A,B,I,L,C,CR,SR,PMS)) = SR .
+  eq pms(cfin(A,B,I,L,C,CR,SR,PMS)) = PMS .
+  -- eq (F = F) = true .
+  eq (cfin(A1,B1,I1,L1,C1,CR1,SR1,PMS1) = cfin(A2,B2,I2,L2,C2,CR2,SR2,PMS2)) 
+     = (A1 = A2 and B1 = B2 and I1 = I2 and L1 = L2 and C1 = C2 and SR1 = SR2 and PMS1 = PMS2) .
+}
+
+mod! SFINISH {
+  pr(PRINCIPAL + SID + CHOICE + LISTOFCHOICES + RANDOM + PMS)
+  [SFinish]
+  op sfin : Prin Prin Sid ListOfChoices Choice Rand Rand Pms -> SFinish
+  op client : SFinish -> Prin
+  op server : SFinish -> Prin
+  op sid    : SFinish -> Sid
+  op list   : SFinish -> ListOfChoices
+  op choice : SFinish -> Choice
+  op crand  : SFinish -> Rand
+  op srand  : SFinish -> Rand
+  op pms    : SFinish -> Pms
+  -- op _=_ : SFinish SFinish -> Bool {comm}
+  var F : SFinish
+  vars A B A1 A2 B1 B2 : Prin
+  vars I I1 I2 : Sid
+  vars L L1 L2 : ListOfChoices
+  vars C C1 C2 : Choice
+  vars CR SR CR1 CR2 SR1 SR2 : Rand
+  vars PMS PMS1 PMS2 : Pms
+  eq client(sfin(A,B,I,L,C,CR,SR,PMS)) = A .
+  eq server(sfin(A,B,I,L,C,CR,SR,PMS)) = B .
+  eq sid(sfin(A,B,I,L,C,CR,SR,PMS)) = I .
+  eq list(sfin(A,B,I,L,C,CR,SR,PMS)) = L .
+  eq choice(sfin(A,B,I,L,C,CR,SR,PMS)) = C .
+  eq crand(sfin(A,B,I,L,C,CR,SR,PMS)) = CR .
+  eq srand(sfin(A,B,I,L,C,CR,SR,PMS)) = SR .
+  eq pms(sfin(A,B,I,L,C,CR,SR,PMS)) = PMS .
+  -- eq (F = F) = true .
+  eq (sfin(A1,B1,I1,L1,C1,CR1,SR1,PMS1) = sfin(A2,B2,I2,L2,C2,CR2,SR2,PMS2)) 
+     = (A1 = A2 and B1 = B2 and I1 = I2 and L1 = L2 and C1 = C2 and SR1 = SR2 and PMS1 = PMS2) .
+}
+
+mod! CFINISH2 {
+  pr(PRINCIPAL + SID + CHOICE + RANDOM + PMS)
+  [CFinish2]
+  op cfin2 : Prin Prin Sid Choice Rand Rand Pms -> CFinish2
+  op client : CFinish2 -> Prin
+  op server : CFinish2 -> Prin
+  op sid    : CFinish2 -> Sid
+  op choice : CFinish2 -> Choice
+  op crand  : CFinish2 -> Rand
+  op srand  : CFinish2 -> Rand
+  op pms    : CFinish2 -> Pms
+  -- op _=_ : CFinish2 CFinish2 -> Bool {comm}
+  var F : CFinish2
+  vars A B A1 A2 B1 B2 : Prin
+  vars I I1 I2 : Sid
+  vars C C1 C2 : Choice
+  vars CR SR CR1 CR2 SR1 SR2 : Rand
+  vars PMS PMS1 PMS2 : Pms
+  eq client(cfin2(A,B,I,C,CR,SR,PMS)) = A .
+  eq server(cfin2(A,B,I,C,CR,SR,PMS)) = B .
+  eq sid(cfin2(A,B,I,C,CR,SR,PMS)) = I .
+  eq choice(cfin2(A,B,I,C,CR,SR,PMS)) = C .
+  eq crand(cfin2(A,B,I,C,CR,SR,PMS)) = CR .
+  eq srand(cfin2(A,B,I,C,CR,SR,PMS)) = SR .
+  eq pms(cfin2(A,B,I,C,CR,SR,PMS)) = PMS .
+  -- eq (F = F) = true .
+  eq (cfin2(A1,B1,I1,C1,CR1,SR1,PMS1) = cfin2(A2,B2,I2,C2,CR2,SR2,PMS2)) 
+     = (A1 = A2 and B1 = B2 and I1 = I2 and C1 = C2 and SR1 = SR2 and PMS1 = PMS2) .
+}
+
+mod! SFINISH2 {
+  pr(PRINCIPAL + SID + CHOICE + RANDOM + PMS)
+  [SFinish2]
+  op sfin2 : Prin Prin Sid Choice Rand Rand Pms -> SFinish2
+  op client : SFinish2 -> Prin
+  op server : SFinish2 -> Prin
+  op sid    : SFinish2 -> Sid
+  op choice : SFinish2 -> Choice
+  op crand  : SFinish2 -> Rand
+  op srand  : SFinish2 -> Rand
+  op pms    : SFinish2 -> Pms
+  -- op _=_ : SFinish2 SFinish2 -> Bool {comm}
+  var F : SFinish2
+  vars A B A1 A2 B1 B2 : Prin
+  vars I I1 I2 : Sid
+  vars C C1 C2 : Choice
+  vars CR SR CR1 CR2 SR1 SR2 : Rand
+  vars PMS PMS1 PMS2 : Pms
+  eq client(sfin2(A,B,I,C,CR,SR,PMS)) = A .
+  eq server(sfin2(A,B,I,C,CR,SR,PMS)) = B .
+  eq sid(sfin2(A,B,I,C,CR,SR,PMS)) = I .
+  eq choice(sfin2(A,B,I,C,CR,SR,PMS)) = C .
+  eq crand(sfin2(A,B,I,C,CR,SR,PMS)) = CR .
+  eq srand(sfin2(A,B,I,C,CR,SR,PMS)) = SR .
+  eq pms(sfin2(A,B,I,C,CR,SR,PMS)) = PMS .
+  -- eq (F = F) = true .
+  eq (sfin2(A1,B1,I1,C1,CR1,SR1,PMS1) = sfin2(A2,B2,I2,C2,CR2,SR2,PMS2)) 
+     = (A1 = A2 and B1 = B2 and I1 = I2 and C1 = C2 and SR1 = SR2 and PMS1 = PMS2) .
+}
+
+mod! ENCPMS {
+  pr(PMS + PUBLICKEY)
+  [EncPms]
+  op epms : PubKey Pms -> EncPms
+  op k : EncPms -> PubKey
+  op pms : EncPms -> Pms
+  -- op _=_ : EncPms EncPms -> Bool {comm}
+  var EP : EncPms
+  vars PK PK1 PK2 : PubKey
+  vars PMS PMS1 PMS2 : Pms
+  eq k(epms(PK,PMS)) = PK .
+  eq pms(epms(PK,PMS)) = PMS .
+  -- eq (EP = EP) = true .
+  eq (epms(PK1,PMS1) = epms(PK2,PMS2))
+     = (PK1 = PK2 and PMS1 = PMS2) .
+}
+
+mod! ENCCFIN {
+  pr(KEY + CFINISH)
+  [EncCFin]
+  op ecfin : Key CFinish -> EncCFin
+  op k : EncCFin -> Key
+  op cfin : EncCFin -> CFinish
+  -- op _=_ : EncCFin EncCFin -> Bool {comm}
+  var EF : EncCFin
+  vars K K1 K2 : Key
+  vars F F1 F2 : CFinish
+  eq k(ecfin(K,F)) = K .
+  eq cfin(ecfin(K,F)) = F .
+  -- eq (EF = EF) = true .
+  eq (ecfin(K1,F1) = ecfin(K2,F2)) 
+     = (K1 = K2 and F1 = F2) .
+}
+
+mod! ENCSFIN {
+  pr(KEY + SFINISH)
+  [EncSFin]
+  op esfin : Key SFinish -> EncSFin
+  op k : EncSFin -> Key
+  op sfin : EncSFin -> SFinish
+  -- op _=_ : EncSFin EncSFin -> Bool {comm}
+  var EF : EncSFin
+  vars K K1 K2 : Key
+  vars F F1 F2 : SFinish
+  eq k(esfin(K,F)) = K .
+  eq sfin(esfin(K,F)) = F .
+  -- eq (EF = EF) = true .
+  eq (esfin(K1,F1) = esfin(K2,F2)) 
+     = (K1 = K2 and F1 = F2) .
+}
+
+mod! ENCCFIN2 {
+  pr(KEY + CFINISH2)
+  [EncCFin2]
+  op ecfin2 : Key CFinish2 -> EncCFin2
+  op k : EncCFin2 -> Key
+  op cfin2 : EncCFin2 -> CFinish2
+  -- op _=_ : EncCFin2 EncCFin2 -> Bool {comm}
+  var EF : EncCFin2
+  vars K K1 K2 : Key
+  vars F F1 F2 : CFinish2
+  eq k(ecfin2(K,F)) = K .
+  eq cfin2(ecfin2(K,F)) = F .
+  -- eq (EF = EF) = true .
+  eq (ecfin2(K1,F1) = ecfin2(K2,F2)) 
+     = (K1 = K2 and F1 = F2) .
+}
+
+mod! ENCSFIN2 {
+  pr(KEY + SFINISH2)
+  [EncSFin2]
+  op esfin2 : Key SFinish2 -> EncSFin2
+  op k : EncSFin2 -> Key
+  op sfin2 : EncSFin2 -> SFinish2
+  -- op _=_ : EncSFin2 EncSFin2 -> Bool {comm}
+  var EF : EncSFin2
+  vars K K1 K2 : Key
+  vars F F1 F2 : SFinish2
+  eq k(esfin2(K,F)) = K .
+  eq sfin2(esfin2(K,F)) = F .
+  -- eq (EF = EF) = true .
+  eq (esfin2(K1,F1) = esfin2(K2,F2)) 
+     = (K1 = K2 and F1 = F2) .
+}
+
+--
+-- ** Abstract version of TLS **
+--
+-- ClientHello     A --> B  Rand_A, ListOfChoices
+-- ServerHellp     B --> A  Rand_B, SID, Choice
+-- Certificate     B --> A  Cert_B
+-- KeyExchange     A --> B  E_{K_B}(PMS)
+-- ClientFinished  A --> B  E_ClientKey(ClientFinish)
+-- ServerFinished  B --> A  E_ServerKey(ServerFinish)
+--
+-- ClientHello2    A --> B  Rand_A, SID
+-- ServerHello2    B --> A  Rand_B, SID, Choice
+-- ClientFinished2 A --> B  E_ClientKey(ClientFinish2)
+-- ServerFinished2 A --> B  E_ServerKey(ServerFinish2)
+--
+-- Cert_B    : B, K_B, S_CA(B, K_B)
+-- ClientKey : K(A, PMS, Rand_A, Rand_B)
+-- ServerKey : K(B, PMS, Rand_A, Rand_B)
+-- ClientFinish    : A, B, SID, ListOfChoices, Choice, Rand_A, Rand_B, PMS
+-- ServerFinish    : A, B, SID, ListOfChoices, Choice, Rand_A, Rand_B, PMS
+-- ClientFinish2   : A, B, SID, Choice, Rand_A, Rand_B, PMS
+-- ServerFinish2   : A, B, SID, Choice, Rand_A, Rand_B, PMS
+--
+
+mod! MSG {
+  pr(PRINCIPAL + RANDOM + CHOICE + LISTOFCHOICES)
+  pr(SID + PMS + CERTIFICATE + ENCPMS + ENCCFIN + ENCSFIN + ENCCFIN2 + ENCSFIN2)
+  [Msg]
+  --       creator source dest  message body
+  --     ---------------------------------------------
+  op ch  : Prin    Prin   Prin  Rand ListOfChoices -> Msg
+  op sh  : Prin    Prin   Prin  Rand Sid Choice    -> Msg
+  op ct  : Prin    Prin   Prin  Cert               -> Msg
+  op kx  : Prin    Prin   Prin  EncPms             -> Msg
+  op cf  : Prin    Prin   Prin  EncCFin             -> Msg
+  op sf  : Prin    Prin   Prin  EncSFin             -> Msg
+  op ch2 : Prin    Prin   Prin  Rand Sid           -> Msg
+  op sh2 : Prin    Prin   Prin  Rand Sid Choice    -> Msg
+  op cf2 : Prin    Prin   Prin  EncCFin2            -> Msg
+  op sf2 : Prin    Prin   Prin  EncSFin2            -> Msg
+  --
+  op ch?  : Msg -> Bool
+  op sh?  : Msg -> Bool
+  op ct?  : Msg -> Bool
+  op kx?  : Msg -> Bool
+  op cf?  : Msg -> Bool
+  op sf?  : Msg -> Bool
+  op ch2? : Msg -> Bool
+  op sh2? : Msg -> Bool
+  op cf2? : Msg -> Bool
+  op sf2? : Msg -> Bool
+  --
+  op crt : Msg -> Prin
+  op src : Msg -> Prin
+  op dst : Msg -> Prin
+  --
+  op rand : Msg -> Rand
+  op list : Msg -> ListOfChoices
+  op choice : Msg -> Choice
+  op sid  : Msg -> Sid
+  op cert : Msg -> Cert
+  op epms : Msg -> EncPms
+  op ecfin : Msg -> EncCFin
+  op esfin : Msg -> EncSFin
+  op ecfin2 : Msg -> EncCFin2
+  op esfin2 : Msg -> EncSFin2
+  --
+  -- op _=_ : Msg Msg -> Bool {comm}
+  --
+  vars M M1 M2 : Msg
+  vars A A' B  : Prin
+  var R : Rand
+  var L : ListOfChoices
+  var C : Choice
+  var I : Sid
+  var CERT : Cert
+  var EPMS : EncPms
+  var ECFIN : EncCFin
+  var ESFIN : EncSFin
+  var ECFIN2 : EncCFin2
+  var ESFIN2 : EncSFin2
+  --
+  eq ch?(ch(A',A,B,R,L))    = true .
+  eq ch?(sh(A',A,B,R,I,C))  = false .
+  eq ch?(ct(A',A,B,CERT))   = false .
+  eq ch?(kx(A',A,B,EPMS))   = false .
+  eq ch?(cf(A',A,B,ECFIN))   = false .
+  eq ch?(sf(A',A,B,ESFIN))   = false .
+  eq ch?(ch2(A',A,B,R,I))    = false .
+  eq ch?(sh2(A',A,B,R,I,C)) = false .
+  eq ch?(cf2(A',A,B,ECFIN2))  = false .
+  eq ch?(sf2(A',A,B,ESFIN2))  = false .
+
+  eq sh?(ch(A',A,B,R,L))    = false .
+  eq sh?(sh(A',A,B,R,I,C))  = true .
+  eq sh?(ct(A',A,B,CERT))   = false .
+  eq sh?(kx(A',A,B,EPMS))   = false .
+  eq sh?(cf(A',A,B,ECFIN))   = false .
+  eq sh?(sf(A',A,B,ESFIN))   = false .
+  eq sh?(ch2(A',A,B,R,I)) = false .
+  eq sh?(sh2(A',A,B,R,I,C)) = false .
+  eq sh?(cf2(A',A,B,ECFIN2))  = false .
+  eq sh?(sf2(A',A,B,ESFIN2))  = false .
+
+  eq ct?(ch(A',A,B,R,L))    = false .
+  eq ct?(sh(A',A,B,R,I,C))  = false .
+  eq ct?(ct(A',A,B,CERT))   = true .
+  eq ct?(kx(A',A,B,EPMS))   = false .
+  eq ct?(cf(A',A,B,ECFIN))   = false .
+  eq ct?(sf(A',A,B,ESFIN))   = false .
+  eq ct?(ch2(A',A,B,R,I)) = false .
+  eq ct?(sh2(A',A,B,R,I,C)) = false .
+  eq ct?(cf2(A',A,B,ECFIN2))  = false .
+  eq ct?(sf2(A',A,B,ESFIN2))  = false .
+
+  eq kx?(ch(A',A,B,R,L))    = false .
+  eq kx?(sh(A',A,B,R,I,C))  = false .
+  eq kx?(ct(A',A,B,CERT))   = false .
+  eq kx?(kx(A',A,B,EPMS))   = true .
+  eq kx?(cf(A',A,B,ECFIN))   = false .
+  eq kx?(sf(A',A,B,ESFIN))   = false .
+  eq kx?(ch2(A',A,B,R,I)) = false .
+  eq kx?(sh2(A',A,B,R,I,C)) = false .
+  eq kx?(cf2(A',A,B,ECFIN2))  = false .
+  eq kx?(sf2(A',A,B,ESFIN2))  = false .
+
+  eq cf?(ch(A',A,B,R,L))    = false .
+  eq cf?(sh(A',A,B,R,I,C))  = false .
+  eq cf?(ct(A',A,B,CERT))   = false .
+  eq cf?(kx(A',A,B,EPMS))   = false .
+  eq cf?(cf(A',A,B,ECFIN))   = true .
+  eq cf?(sf(A',A,B,ESFIN))   = false .
+  eq cf?(ch2(A',A,B,R,I)) = false .
+  eq cf?(sh2(A',A,B,R,I,C)) = false .
+  eq cf?(cf2(A',A,B,ECFIN2))  = false .
+  eq cf?(sf2(A',A,B,ESFIN2))  = false .
+
+  eq sf?(ch(A',A,B,R,L))    = false .
+  eq sf?(sh(A',A,B,R,I,C))  = false .
+  eq sf?(ct(A',A,B,CERT))   = false .
+  eq sf?(kx(A',A,B,EPMS))   = false .
+  eq sf?(cf(A',A,B,ECFIN))   = false .
+  eq sf?(sf(A',A,B,ESFIN))   = true .
+  eq sf?(ch2(A',A,B,R,I)) = false .
+  eq sf?(sh2(A',A,B,R,I,C)) = false .
+  eq sf?(cf2(A',A,B,ECFIN2))  = false .
+  eq sf?(sf2(A',A,B,ESFIN2))  = false .
+
+  eq ch2?(ch(A',A,B,R,L))    = false .
+  eq ch2?(sh(A',A,B,R,I,C))  = false .
+  eq ch2?(ct(A',A,B,CERT))   = false .
+  eq ch2?(kx(A',A,B,EPMS))   = false .
+  eq ch2?(cf(A',A,B,ECFIN))   = false .
+  eq ch2?(sf(A',A,B,ESFIN))   = false .
+  eq ch2?(ch2(A',A,B,R,I)) = true .
+  eq ch2?(sh2(A',A,B,R,I,C)) = false .
+  eq ch2?(cf2(A',A,B,ECFIN2))  = false .
+  eq ch2?(sf2(A',A,B,ESFIN2))  = false .
+
+  eq sh2?(ch(A',A,B,R,L))    = false .
+  eq sh2?(sh(A',A,B,R,I,C))  = false .
+  eq sh2?(ct(A',A,B,CERT))   = false .
+  eq sh2?(kx(A',A,B,EPMS))   = false .
+  eq sh2?(cf(A',A,B,ECFIN))   = false .
+  eq sh2?(sf(A',A,B,ESFIN))   = false .
+  eq sh2?(ch2(A',A,B,R,I)) = false .
+  eq sh2?(sh2(A',A,B,R,I,C)) = true .
+  eq sh2?(cf2(A',A,B,ECFIN2))  = false .
+  eq sh2?(sf2(A',A,B,ESFIN2))  = false .
+
+  eq cf2?(ch(A',A,B,R,L))    = false .
+  eq cf2?(sh(A',A,B,R,I,C))  = false .
+  eq cf2?(ct(A',A,B,CERT))   = false .
+  eq cf2?(kx(A',A,B,EPMS))   = false .
+  eq cf2?(cf(A',A,B,ECFIN))   = false .
+  eq cf2?(sf(A',A,B,ESFIN))   = false .
+  eq cf2?(ch2(A',A,B,R,I)) = false .
+  eq cf2?(sh2(A',A,B,R,I,C)) = false .
+  eq cf2?(cf2(A',A,B,ECFIN2))  = true .
+  eq cf2?(sf2(A',A,B,ESFIN2))  = false .
+
+  eq sf2?(ch(A',A,B,R,L))    = false .
+  eq sf2?(sh(A',A,B,R,I,C))  = false .
+  eq sf2?(ct(A',A,B,CERT))   = false .
+  eq sf2?(kx(A',A,B,EPMS))   = false .
+  eq sf2?(cf(A',A,B,ECFIN))   = false .
+  eq sf2?(sf(A',A,B,ESFIN))   = false .
+  eq sf2?(ch2(A',A,B,R,I)) = false .
+  eq sf2?(sh2(A',A,B,R,I,C)) = false .
+  eq sf2?(cf2(A',A,B,ECFIN2))  = false .
+  eq sf2?(sf2(A',A,B,ESFIN2))  = true .
+  --
+  eq crt(ch(A',A,B,R,L))    = A' .
+  eq crt(sh(A',A,B,R,I,C))  = A' .
+  eq crt(ct(A',A,B,CERT))   = A' .
+  eq crt(kx(A',A,B,EPMS))   = A' .
+  eq crt(cf(A',A,B,ECFIN))   = A' .
+  eq crt(sf(A',A,B,ESFIN))   = A' .
+  eq crt(ch2(A',A,B,R,I))   = A' .
+  eq crt(sh2(A',A,B,R,I,C)) = A' .
+  eq crt(cf2(A',A,B,ECFIN2))  = A' .
+  eq crt(sf2(A',A,B,ESFIN2))  = A' .
+
+  eq src(ch(A',A,B,R,L))    = A .
+  eq src(sh(A',A,B,R,I,C))  = A .
+  eq src(ct(A',A,B,CERT))   = A .
+  eq src(kx(A',A,B,EPMS))   = A .
+  eq src(cf(A',A,B,ECFIN))   = A .
+  eq src(sf(A',A,B,ESFIN))   = A .
+  eq src(ch2(A',A,B,R,I))   = A .
+  eq src(sh2(A',A,B,R,I,C)) = A .
+  eq src(cf2(A',A,B,ECFIN2))  = A .
+  eq src(sf2(A',A,B,ESFIN2))  = A .
+
+  eq dst(ch(A',A,B,R,L))    = B .
+  eq dst(sh(A',A,B,R,I,C))  = B .
+  eq dst(ct(A',A,B,CERT))   = B .
+  eq dst(kx(A',A,B,EPMS))   = B .
+  eq dst(cf(A',A,B,ECFIN))   = B .
+  eq dst(sf(A',A,B,ESFIN))   = B .
+  eq dst(ch2(A',A,B,R,I))    = B .
+  eq dst(sh2(A',A,B,R,I,C))  = B .
+  eq dst(cf2(A',A,B,ECFIN2))  = B .
+  eq dst(sf2(A',A,B,ESFIN2))  = B .
+  --
+  eq rand(ch(A',A,B,R,L))    = R .
+  eq rand(sh(A',A,B,R,I,C))  = R .
+  eq rand(ch2(A',A,B,R,I))   = R .
+  eq rand(sh2(A',A,B,R,I,C)) = R .
+  
+  eq list(ch(A',A,B,R,L))    = L .
+
+  eq choice(sh(A',A,B,R,I,C))  = C .
+  eq choice(sh2(A',A,B,R,I,C)) = C .
+
+  eq sid(sh(A',A,B,R,I,C))  = I .
+  eq sid(ch2(A',A,B,R,I))   = I .
+  eq sid(sh2(A',A,B,R,I,C)) = I .
+
+  eq cert(ct(A',A,B,CERT))   = CERT .
+
+  eq epms(kx(A',A,B,EPMS))   = EPMS .
+
+  eq ecfin(cf(A',A,B,ECFIN))   = ECFIN .
+
+  eq esfin(sf(A',A,B,ESFIN))   = ESFIN .
+
+  eq ecfin2(cf2(A',A,B,ECFIN2))  = ECFIN2 .
+
+  eq esfin2(sf2(A',A,B,ESFIN2))  = ESFIN2 .
+  --
+  -- eq (M = M) = true .
+  ceq (M1 = M2) = (ch?(M2) and crt(M1) = crt(M2) and src(M1) = src(M2) and dst(M1) = dst(M2) and 
+                   rand(M1) = rand(M2) and list(M1) = list(M2))
+      if ch?(M1) .
+  ceq (M1 = M2) = (sh?(M2) and crt(M1) = crt(M2) and src(M1) = src(M2) and dst(M1) = dst(M2) and 
+                   rand(M1) = rand(M2) and sid(M1) = sid(M2) and choice(M1) = choice(M2))
+      if sh?(M1) .
+  ceq (M1 = M2) = (ct?(M2) and crt(M1) = crt(M2) and src(M1) = src(M2) and dst(M1) = dst(M2) and 
+                   cert(M1) = cert(M2))
+      if ct?(M1) .
+  ceq (M1 = M2) = (kx?(M2) and crt(M1) = crt(M2) and src(M1) = src(M2) and dst(M1) = dst(M2) and 
+                   epms(M1) = epms(M2))
+      if kx?(M1) .
+  ceq (M1 = M2) = (cf?(M2) and crt(M1) = crt(M2) and src(M1) = src(M2) and dst(M1) = dst(M2) and 
+                   ecfin(M1) = ecfin(M2))
+      if cf?(M1) .
+  ceq (M1 = M2) = (sf?(M2) and crt(M1) = crt(M2) and src(M1) = src(M2) and dst(M1) = dst(M2) and 
+                   esfin(M1) = esfin(M2))
+      if sf?(M1) .
+  ceq (M1 = M2) = (ch2?(M2) and crt(M1) = crt(M2) and src(M1) = src(M2) and dst(M1) = dst(M2) and 
+                   rand(M1) = rand(M2) and sid(M1) = sid(M2))
+      if ch2?(M1) .
+  ceq (M1 = M2) = (sh2?(M2) and crt(M1) = crt(M2) and src(M1) = src(M2) and dst(M1) = dst(M2) and 
+                   rand(M1) = rand(M2) and sid(M1) = sid(M2) and choice(M1) = choice(M2))
+      if sh2?(M1) .
+  ceq (M1 = M2) = (cf2?(M2) and crt(M1) = crt(M2) and src(M1) = src(M2) and dst(M1) = dst(M2) and 
+                   ecfin2(M1) = ecfin2(M2))
+      if cf2?(M1) .
+  ceq (M1 = M2) = (sf2?(M2) and crt(M1) = crt(M2) and src(M1) = src(M2) and dst(M1) = dst(M2) and 
+                   esfin2(M1) = esfin2(M2))
+      if sf2?(M1) .
+}
+
+-- mod* TRIV {
+--   pr(TRIV)
+  -- op _=_ : Elt Elt -> Bool {comm}
+-- }
+
+mod! BAG (D :: TRIV) {
+  [Elt.D < Bag]
+  op void : -> Bag
+  op _,_ : Bag Bag -> Bag {assoc comm id: void}
+  op _\in_ : Elt.D Bag -> Bool
+  var B : Bag
+  vars E1 E2 : Elt.D
+  eq E1 \in void = false .
+  eq E1 \in E2 = (E1 = E2) .
+  eq E1 \in (E2,B) = (E1 = E2) or (E1 \in B) .
+}
+
+mod! SET (D :: TRIV) {
+  [Elt.D < Set]
+  op empty : -> Set
+  op __ : Set Set -> Set {assoc comm idem id: empty}
+  op _\in_ : Elt.D Set -> Bool
+  var S : Set
+  vars E1 E2 : Elt.D
+  eq E1 \in empty = false .
+  eq E1 \in E2 = (E1 = E2) .
+  eq E1 \in (E2 S) = (E1 = E2) or (E1 \in S) .
+}
+
+mod! COLLECTION(D :: TRIV) {
+  [Elt.D < Col]
+  op _\in_ : Elt.D Col -> Bool 
+}
+view TRIV2RANDOM from TRIV to RANDOM {
+  sort Elt -> Rand
+}
+view TRIV2SID from TRIV to SID {
+  sort Elt -> Sid
+}
+view TRIV2SECRET from TRIV to SECRET {
+  sort Elt -> Secret
+}
+view TRIV2MSG from TRIV to MSG {
+  sort Elt -> Msg
+}
+view TRIV2PMS from TRIV to PMS {
+  sort Elt -> Pms
+}
+view TRIV2SIG from TRIV to SIGNATURE {
+  sort Elt -> Sig
+}
+view TRIV2ENCPMS from TRIV to ENCPMS {
+  sort Elt -> EncPms
+}
+view TRIV2ENCCFIN from TRIV to ENCCFIN {
+  sort Elt -> EncCFin
+}
+view TRIV2ENCSFIN from TRIV to ENCSFIN {
+  sort Elt -> EncSFin
+}
+view TRIV2ENCCFIN2 from TRIV to ENCCFIN2 {
+  sort Elt -> EncCFin2
+}
+view TRIV2ENCSFIN2 from TRIV to ENCSFIN2 {
+  sort Elt -> EncSFin2
+}
+
+mod! NETWORK {
+  -- pr(SPECIALPRINCIPAL)
+  pr(BAG(D <= TRIV2MSG)*{sort Bag -> Network})
+  pr(COLLECTION(D <= TRIV2PMS)*{sort Col -> ColPms})
+  pr(COLLECTION(D <= TRIV2SIG)*{sort Col -> ColSig})
+  pr(COLLECTION(D <= TRIV2ENCPMS)*{sort Col -> ColEncPms})
+  pr(COLLECTION(D <= TRIV2ENCCFIN)*{sort Col -> ColEncCFin})
+  pr(COLLECTION(D <= TRIV2ENCSFIN)*{sort Col -> ColEncSFin})
+  pr(COLLECTION(D <= TRIV2ENCCFIN2)*{sort Col -> ColEncCFin2})
+  pr(COLLECTION(D <= TRIV2ENCSFIN2)*{sort Col -> ColEncSFin2})
+  --
+  op cpms : Network -> ColPms
+  op csig : Network -> ColSig
+  op cepms : Network -> ColEncPms
+  op cecfin : Network -> ColEncCFin
+  op cesfin : Network -> ColEncSFin
+  op cecfin2 : Network -> ColEncCFin2
+  op cesfin2 : Network -> ColEncSFin2
+  --
+  vars NW NW10 : Network
+  vars M M2 : Msg
+  var PMS : Pms
+  var G : Sig
+  var EPMS : EncPms
+  var ECFIN : EncCFin
+  var ESFIN : EncSFin
+  var ECFIN2 : EncCFin2
+  var ESFIN2 : EncSFin2
+  --
+  -- cpms
+  eq PMS \in cpms(void) = (client(PMS) = intruder) .
+  ceq PMS \in cpms(M,NW) = true if (kx?(M) and owner(k(epms(M))) = intruder and PMS = pms(epms(M))) .
+  ceq PMS \in cpms(M,NW) = PMS \in cpms(NW)
+      if not(kx?(M) and owner(k(epms(M))) = intruder and PMS = pms(epms(M))) .
+  -- 
+  -- csig
+  eq G \in csig(void) = false .
+  ceq G \in csig(M,NW) = true if (ct?(M) and G = sig(cert(M))) .
+  ceq sig(cert(M)) \in csig(NW) = true if (M \in NW and ct?(M)) . -- added 21/04/14
+  ceq G \in csig(M,NW) = G \in csig(NW) 
+      if not(ct?(M) and G = sig(cert(M))) .
+  
+  ceq ct(P1:Prin, P2:Prin, P3:Prin, cert(P4:Prin, K:PubKey, G)) \in NW = false
+    if G \in csig(NW) = false .
+  
+  ceq sig(cert(M)) \in csig(NW) = false
+    if (ct?(M) and (M \in NW) = false) .
+  -- ceq sig(cert(M)) \in csig(NW) = false if (ct?(M) and M \in NW = false) .
+  -- ceq sig(P6:Prin, P5:Prin, K2:PubKey) \in csig(NW) = false
+  -- if ct(P1:Prin, P2:Prin, P3:Prin, cert(P4:Prin, K:PubKey, sig(P6:Prin, P5:Prin, K2:PubKey))) \in NW = false . 
+  
+  
+  -- cepms
+  eq EPMS \in cepms(void) = false .
+  ceq EPMS \in cepms(M,NW) = true if (kx?(M) and not(owner(k(epms(M))) = intruder) and EPMS = epms(M)) .
+  ceq EPMS \in cepms(M,NW) = EPMS \in cepms(NW)
+      if not(kx?(M) and not(owner(k(epms(M))) = intruder) and EPMS = epms(M)) .
+  --
+  -- cecfin
+  eq ECFIN \in cecfin(void) = false .
+  ceq ECFIN \in cecfin(M,NW) = true if (cf?(M) and ECFIN = ecfin(M)) .
+  ceq ECFIN \in cecfin(M,NW) = ECFIN \in cecfin(NW)
+      if not(cf?(M) and ECFIN = ecfin(M)) .
+  --
+  -- cefin
+  eq ESFIN \in cesfin(void) = false .
+  ceq ESFIN \in cesfin(M,NW) = true if (sf?(M) and ESFIN = esfin(M)) .
+  ceq ESFIN \in cesfin(M,NW) = ESFIN \in cesfin(NW)
+      if not(sf?(M) and ESFIN = esfin(M)) .
+  --
+  -- cecfin2
+  eq ECFIN2 \in cecfin2(void) = false .
+  ceq ECFIN2 \in cecfin2(M,NW) = true if (cf2?(M) and ECFIN2 = ecfin2(M)) .
+  ceq ECFIN2 \in cecfin2(M,NW) = ECFIN2 \in cecfin2(NW)
+      if not(cf2?(M) and ECFIN2 = ecfin2(M)) .
+  --
+  -- cesfin2
+  eq ESFIN2 \in cesfin2(void) = false .
+  ceq ESFIN2 \in cesfin2(M,NW) = true if (sf2?(M) and ESFIN2 = esfin2(M)) .
+  ceq ESFIN2 \in cesfin2(M,NW) = ESFIN2 \in cesfin2(NW)
+      if not(sf2?(M) and ESFIN2 = esfin2(M)) .
+  
+  -- ceq sf2(P1:Prin, P2:Prin, P3:Prin, ESFIN2) \in NW = false
+  -- if ESFIN2 \in cesfin2(NW) = false . 
+
+  -- ceq ct(B1,B,A,cert(B,K,sig(ca,B,K))) \in nw(p) = true if nw(p) = ct(b1,b,a,cert(b,k,sig(ca,b,k))) , NW10 .
+
+-- added 21/05/04
+  op lm1 : Msg Msg Network -> Bool
+  eq lm1(M, M2, NW) = (M = M2 and M \in NW) implies (M2 \in NW) .
+}
+
+mod! SESSIONSTATE {
+  pr(CHOICE + RANDOM + PMS)
+  [Session]
+  op none : -> Session
+  op st : Choice Rand Rand Pms -> Session
+  op choice : Session -> Choice
+  op crand  : Session -> Rand
+  op srand  : Session -> Rand
+  op pms    : Session -> Pms
+  -- op _=_ : Session Session -> Bool {comm}
+  var S : Session 
+  vars C C1 C2 : Choice
+  vars CR SR CR1 CR2 SR1 SR2 : Rand
+  vars PMS PMS1 PMS2 :  Pms
+  eq choice(st(C,CR,SR,PMS)) = C .
+  eq crand(st(C,CR,SR,PMS)) = CR .
+  eq srand(st(C,CR,SR,PMS)) = SR .
+  eq pms(st(C,CR,SR,PMS)) = PMS .
+  -- eq (S = S) = true .
+  -- eq (none = st(C,CR,SR,PMS)) = false .
+  eq (st(C1,CR1,SR1,PMS1) = st(C2,CR2,SR2,PMS2))
+     = (C1 = C2 and CR1 = CR2 and SR1 = SR2 and PMS1 = PMS2) .
+}
+
+mod* TLS {
+  pr(NETWORK)
+  pr(SET(D <= TRIV2RANDOM)*{sort Set -> URand})
+  pr(SET(D <= TRIV2SID)*{sort Set -> USid})
+  pr(SET(D <= TRIV2SECRET)*{sort Set -> USecret})
+  pr(SESSIONSTATE)
+  -- *[Protocol]*
+  [Protocol]
+
+-- any initial state
+  op init : -> Protocol {constr}
+-- observations
+  op nw : Protocol -> Network
+  op ss : Protocol Prin Prin Sid -> Session
+  op ur : Protocol -> URand
+  op ui : Protocol -> USid
+  op us : Protocol -> USecret
+-- actions
+  op chello  : Protocol Prin Prin Rand ListOfChoices -> Protocol {constr}
+  op shello  : Protocol Prin Rand Sid Choice Msg -> Protocol {constr}
+  op cert    : Protocol Prin Msg Msg -> Protocol {constr}
+  op kexch   : Protocol Prin Secret Msg Msg Msg -> Protocol {constr}
+  op cfin    : Protocol Prin Secret Msg Msg Msg Msg -> Protocol {constr}
+  op sfin    : Protocol Prin Msg Msg Msg Msg Msg -> Protocol {constr}
+  op compl   : Protocol Prin Secret Msg Msg Msg Msg Msg Msg -> Protocol {constr}
+  op chello2 : Protocol Prin Prin Secret Rand Sid -> Protocol {constr}
+  op shello2 : Protocol Prin Rand Msg -> Protocol {constr}
+  op cfin2   : Protocol Prin Secret Msg Msg -> Protocol {constr}
+  op sfin2   : Protocol Prin Msg Msg Msg -> Protocol {constr}
+  op compl2  : Protocol Prin Secret Msg Msg Msg Msg -> Protocol {constr} 
+  --
+  op fakeChello  : Protocol Prin Prin Rand ListOfChoices -> Protocol {constr}
+  op fakeShello  : Protocol Prin Prin Rand Sid Choice -> Protocol {constr}
+  op fakeCert    : Protocol Prin Prin PubKey Sig -> Protocol {constr}
+  op fakeKexch1  : Protocol Prin Prin EncPms -> Protocol {constr}
+  op fakeKexch2  : Protocol Prin Prin PubKey Pms -> Protocol {constr}
+  op fakeCfin1   : Protocol Prin Prin EncCFin -> Protocol {constr}
+  op fakeCfin2   : Protocol Prin Prin Sid ListOfChoices Choice Rand Rand Pms -> Protocol {constr}
+  op fakeSfin1   : Protocol Prin Prin EncSFin -> Protocol {constr}
+  op fakeSfin2   : Protocol Prin Prin Sid ListOfChoices Choice Rand Rand Pms -> Protocol {constr}
+  op fakeChello2 : Protocol Prin Prin Rand Sid -> Protocol {constr}
+  op fakeShello2 : Protocol Prin Prin Rand Sid Choice -> Protocol {constr}
+  op fakeCfin21  : Protocol Prin Prin EncCFin2 -> Protocol {constr}
+  op fakeCfin22  : Protocol Prin Prin Sid Choice Rand Rand Pms -> Protocol {constr}
+  op fakeSfin21  : Protocol Prin Prin EncSFin2 -> Protocol {constr}
+  op fakeSfin22  : Protocol Prin Prin Sid Choice Rand Rand Pms -> Protocol {constr}
+-- CafeOBJ variables
+  var P : Protocol
+  vars A B A2 B2 : Prin 
+  vars I I2 : Sid
+  vars R R1 R2 : Rand
+  var L : ListOfChoices
+  var C : Choice
+  var S : Secret
+  var PMS : Pms
+  vars M M1 M2 M3 M4 M5 M6 : Msg
+  var PK : PubKey
+  var G : Sig
+  var EPMS : EncPms
+  var ECFIN : EncCFin
+  var ESFIN : EncSFin
+  var ECFIN2 : EncCFin2
+  var ESFIN2 : EncSFin2
+-- for any initial state
+  eq nw(init) = void .
+  eq ss(init,A,B,I) = none .
+  eq ur(init) = empty .
+  eq ui(init) = empty .
+  eq us(init) = empty .
+-- chello
+  op c-chello : Protocol Prin Prin Rand ListOfChoices -> Bool
+  eq c-chello(P,A,B,R,L) = not(R \in ur(P)) .
+  --
+  ceq nw(chello(P,A,B,R,L)) = ch(A,A,B,R,L) , nw(P) if c-chello(P,A,B,R,L) .
+  eq  ss(chello(P,A,B,R,L),A2,B2,I2) = ss(P,A2,B2,I2) .
+  ceq ur(chello(P,A,B,R,L)) = R ur(P) if c-chello(P,A,B,R,L) .
+  eq  ui(chello(P,A,B,R,L)) = ui(P) .
+  eq  us(chello(P,A,B,R,L)) = us(P) .
+  ceq chello(P,A,B,R,L)     = P if not c-chello(P,A,B,R,L) .
+-- shello
+  op c-shello : Protocol Prin Rand Sid Choice Msg -> Bool
+  eq c-shello(P,B,R,I,C,M) 
+     = (not(R \in ur(P)) and not(I \in ui(P)) and M \in nw(P) and ch?(M) and dst(M) = B and C \in list(M)) .
+  --
+  ceq nw(shello(P,B,R,I,C,M)) = sh(B,B,src(M),R,I,C) , nw(P) if c-shello(P,B,R,I,C,M) .
+  eq  ss(shello(P,B,R,I,C,M),A2,B2,I2) = ss(P,A2,B2,I2) .
+  ceq ur(shello(P,B,R,I,C,M)) = R ur(P) if c-shello(P,B,R,I,C,M) .
+  ceq ui(shello(P,B,R,I,C,M)) = I ui(P) if c-shello(P,B,R,I,C,M) .
+  eq  us(shello(P,B,R,I,C,M)) = us(P) .
+  ceq shello(P,B,R,I,C,M)     = P if not c-shello(P,B,R,I,C,M) .
+-- cert
+  op c-cert : Protocol Prin Msg Msg -> Bool
+  eq c-cert(P,B,M1,M2) 
+     = (M1 \in nw(P) and M2 \in nw(P) and ch?(M1) and sh?(M2) and 
+        dst(M1) = B and crt(M2) = B and src(M2) = B and src(M1) = dst(M2) and choice(M2) \in list(M1)) .
+  --
+  ceq nw(cert(P,B,M1,M2)) = ct(B,B,dst(M2),cert(B,k(B),sig(ca,B,k(B)))) , nw(P) if c-cert(P,B,M1,M2) .
+  eq  ss(cert(P,B,M1,M2),A2,B2,I2) = ss(P,A2,B2,I2) .
+  eq  ur(cert(P,B,M1,M2)) = ur(P) .
+  eq  ui(cert(P,B,M1,M2)) = ui(P) .
+  eq  us(cert(P,B,M1,M2)) = us(P) .
+  ceq cert(P,B,M1,M2)     = P if not c-cert(P,B,M1,M2) .
+-- kexch
+  op c-kexch : Protocol Prin Secret Msg Msg Msg -> Bool
+  eq c-kexch(P,A,S,M1,M2,M3) 
+     = (not(S \in us(P)) and M1 \in nw(P) and M2 \in nw(P) and M3 \in nw(P) and ch?(M1) and sh?(M2) and ct?(M3) and
+        crt(M1) = A and src(M1) = A and src(M2) = dst(M1) and dst(M2) = A and src(M3) = dst(M1) and dst(M3) = A and
+        choice(M2) \in list(M1) and server(cert(M3)) = dst(M1) and 
+        sig(cert(M3)) = sig(ca,server(cert(M3)),pubkey(cert(M3)))) .
+  --
+  ceq nw(kexch(P,A,S,M1,M2,M3)) = kx(A,A,dst(M1),epms(pubkey(cert(M3)),pms(A,dst(M1),S))) , nw(P) if c-kexch(P,A,S,M1,M2,M3) .
+-- ceq nw(kexch(P,A,S,M1,M2,M3)) = kx(A,A,dst(M1),epms(k(dst(M1)),pms(A,dst(M1),S))) , nw(P) if c-kexch(P,A,S,M1,M2,M3) .
+  eq  ss(kexch(P,A,S,M1,M2,M3),A2,B2,I2) = ss(P,A2,B2,I2) .
+  eq  ur(kexch(P,A,S,M1,M2,M3)) = ur(P) .
+  eq  ui(kexch(P,A,S,M1,M2,M3)) = ui(P) .
+  ceq us(kexch(P,A,S,M1,M2,M3)) = S us(P) if c-kexch(P,A,S,M1,M2,M3) .
+  ceq kexch(P,A,S,M1,M2,M3)     = P if not c-kexch(P,A,S,M1,M2,M3) .
+-- cfin
+  op c-cfin : Protocol Prin Secret Msg Msg Msg Msg -> Bool
+  eq c-cfin(P,A,S,M1,M2,M3,M4) 
+     = (M1 \in nw(P) and M2 \in nw(P) and M3 \in nw(P) and M4 \in nw(P) and
+        ch?(M1) and sh?(M2) and ct?(M3) and kx?(M4) and
+        crt(M1) = A and src(M1) = A and crt(M4) = A and src(M4) = A and dst(M4) = dst(M1) and
+        src(M2) = dst(M1) and dst(M2) = A and src(M3) = dst(M1) and dst(M3) = A and
+        choice(M2) \in list(M1) and server(cert(M3)) = dst(M1) and 
+        sig(cert(M3)) = sig(ca,server(cert(M3)),pubkey(cert(M3))) and
+        epms(M4) = epms(pubkey(cert(M3)),pms(A,dst(M1),S))) .
+  --
+  ceq nw(cfin(P,A,S,M1,M2,M3,M4)) 
+      = cf(A,A,dst(M1),ecfin(k(A,pms(epms(M4)),rand(M1),rand(M2)),
+                            cfin(A,dst(M1),sid(M2),list(M1),choice(M2),rand(M1),rand(M2),pms(epms(M4))))) , nw(P)
+      if c-cfin(P,A,S,M1,M2,M3,M4) .
+  eq  ss(cfin(P,A,S,M1,M2,M3,M4),A2,B2,I2) = ss(P,A2,B2,I2) .
+  eq  ur(cfin(P,A,S,M1,M2,M3,M4)) = ur(P) .
+  eq  ui(cfin(P,A,S,M1,M2,M3,M4)) = ui(P) .
+  eq  us(cfin(P,A,S,M1,M2,M3,M4)) = us(P) .
+  ceq cfin(P,A,S,M1,M2,M3,M4)     = P if not c-cfin(P,A,S,M1,M2,M3,M4) .
+-- sfin
+  op c-sfin : Protocol Prin Msg Msg Msg Msg Msg -> Bool
+  eq c-sfin(P,B,M1,M2,M3,M4,M5) 
+     = (M1 \in nw(P) and M2 \in nw(P) and M3 \in nw(P) and M4 \in nw(P) and M5 \in nw(P) and
+        ch?(M1) and sh?(M2) and ct?(M3) and kx?(M4) and cf?(M5) and
+        crt(M2) = B and src(M2) = B and crt(M3) = B and src(M3) = B and dst(M3) = dst(M2) and
+        src(M1) = dst(M2) and dst(M1) = B and src(M4) = dst(M2) and dst(M4) = B and src(M5) = dst(M2) and dst(M5) = B and
+        choice(M2) \in list(M1) and cert(M3) = cert(B,k(B),sig(ca,B,k(B))) and k(epms(M4)) = k(B) and
+        ecfin(M5) = ecfin(k(dst(M2),pms(epms(M4)),rand(M1),rand(M2)),
+                        cfin(dst(M2),B,sid(M2),list(M1),choice(M2),rand(M1),rand(M2),pms(epms(M4))))) .
+  --
+  ceq nw(sfin(P,B,M1,M2,M3,M4,M5))
+      = sf(B,B,dst(M2),esfin(k(B,pms(epms(M4)),rand(M1),rand(M2)),
+                            sfin(dst(M2),B,sid(M2),list(M1),choice(M2),rand(M1),rand(M2),pms(epms(M4))))) , nw(P)
+      if c-sfin(P,B,M1,M2,M3,M4,M5) .
+  ceq ss(sfin(P,B,M1,M2,M3,M4,M5),A2,B2,I2)
+      = (if (A2 = dst(M2) and B2 = B2 and I2 = sid(M2)) then st(choice(M2),rand(M1),rand(M2),pms(epms(M4)))
+                                                       else ss(P,A2,B2,I2) fi)
+      if c-sfin(P,B,M1,M2,M3,M4,M5) .
+  eq  ur(sfin(P,B,M1,M2,M3,M4,M5)) = ur(P) .
+  eq  ui(sfin(P,B,M1,M2,M3,M4,M5)) = ui(P) .
+  eq  us(sfin(P,B,M1,M2,M3,M4,M5)) = us(P) .
+  ceq sfin(P,B,M1,M2,M3,M4,M5)     = P if not c-sfin(P,B,M1,M2,M3,M4,M5) .
+-- compl
+  op c-compl : Protocol Prin Secret Msg Msg Msg Msg Msg Msg -> Bool
+  eq c-compl(P,A,S,M1,M2,M3,M4,M5,M6) 
+     = (M1 \in nw(P) and M2 \in nw(P) and M3 \in nw(P) and M4 \in nw(P) and M5 \in nw(P) and M6 \in nw(P) and
+       ch?(M1) and sh?(M2) and ct?(M3) and kx?(M4) and cf?(M5) and sf?(M6) and
+       crt(M1) = A and src(M1) = A and crt(M4) = A and src(M4) = A and dst(M4) = dst(M1) and
+       crt(M5) = A and src(M5) = A and dst(M5) = dst(M1) and
+       src(M2) = dst(M1) and dst(M2) = A and src(M3) = dst(M1) and dst(M3) = A and
+       src(M6) = dst(M1) and dst(M6) = A and
+       choice(M2) \in list(M1) and server(cert(M3)) = dst(M1) and
+       sig(cert(M3)) = sig(ca,server(cert(M3)),pubkey(cert(M3))) and
+       epms(M4) = epms(pubkey(cert(M3)),pms(A,dst(M1),S)) and
+       ecfin(M5) = ecfin(k(A,pms(epms(M4)),rand(M1),rand(M2)),
+                       cfin(A,dst(M1),sid(M2),list(M1),choice(M2),rand(M1),rand(M2),pms(epms(M4)))) and
+       esfin(M6) = esfin(k(dst(M1),pms(epms(M4)),rand(M1),rand(M2)),
+                       sfin(A,dst(M1),sid(M2),list(M1),choice(M2),rand(M1),rand(M2),pms(epms(M4))))) .
+  --
+  eq  nw(compl(P,A,S,M1,M2,M3,M4,M5,M6)) = nw(P) .
+  ceq ss(compl(P,A,S,M1,M2,M3,M4,M5,M6),A2,B2,I2)
+      = (if (A2 = A and B2 = dst(M1) and I2 = sid(M2)) then st(choice(M2),rand(M1),rand(M2),pms(epms(M4)))
+                                                       else ss(P,A2,B2,I2) fi)
+      if c-compl(P,A,S,M1,M2,M3,M4,M5,M6) .
+  eq  ur(compl(P,A,S,M1,M2,M3,M4,M5,M6)) = ur(P) .
+  eq  ui(compl(P,A,S,M1,M2,M3,M4,M5,M6)) = ui(P) .
+  eq  us(compl(P,A,S,M1,M2,M3,M4,M5,M6)) = us(P) .
+  ceq compl(P,A,S,M1,M2,M3,M4,M5,M6)     = P if not c-compl(P,A,S,M1,M2,M3,M4,M5,M6) .
+-- chello2
+  op c-chello2 : Protocol Prin Prin Secret Rand Sid -> Bool
+  eq c-chello2(P,A,B,S,R,I) 
+     = (not(R \in ur(P)) and not(ss(P,A,B,I) = none) and pms(ss(P,A,B,I)) = pms(A,B,S)) .
+  --
+  ceq nw(chello2(P,A,B,S,R,I)) = ch2(A,A,B,R,I) , nw(P) if c-chello2(P,A,B,S,R,I) .
+  eq  ss(chello2(P,A,B,S,R,I),A2,B2,I2) = ss(P,A2,B2,I2) .
+  ceq ur(chello2(P,A,B,S,R,I)) = R ur(P) if c-chello2(P,A,B,S,R,I) .
+  eq  ui(chello2(P,A,B,S,R,I)) = ui(P) .
+  eq  us(chello2(P,A,B,S,R,I)) = us(P) .
+  ceq chello2(P,A,B,S,R,I)     = P if not c-chello2(P,A,B,S,R,I) .
+-- shello2
+  op c-shello2 : Protocol Prin Rand Msg -> Bool
+  eq c-shello2(P,B,R,M) 
+     = (not(R \in ur(P)) and M \in nw(P) and ch2?(M) and dst(M) = B and not(ss(P,src(M),B,sid(M)) = none)) .
+  --
+  ceq nw(shello2(P,B,R,M)) = sh2(B,B,src(M),R,sid(M),choice(ss(P,src(M),B,sid(M)))) , nw(P) if c-shello2(P,B,R,M) .
+  eq  ss(shello2(P,B,R,M),A2,B2,I2) = ss(P,A2,B2,I2) .
+  ceq ur(shello2(P,B,R,M)) = R ur(P) if c-shello2(P,B,R,M) .
+  eq  ui(shello2(P,B,R,M)) = ui(P) .
+  eq  us(shello2(P,B,R,M)) = us(P) .
+  ceq shello2(P,B,R,M)     = P if not c-shello2(P,B,R,M) .
+-- cfin2
+  op c-cfin2 : Protocol Prin Secret Msg Msg -> Bool
+  eq c-cfin2(P,A,S,M1,M2)
+     = (M1 \in nw(P) and M2 \in nw(P) and ch2?(M1) and sh2?(M2) and
+        crt(M1) = A and src(M1) = A and src(M2) = dst(M1) and dst(M2) = A and
+        sid(M1) = sid(M2) and 
+        not(ss(P,A,dst(M1),sid(M2)) = none) and choice(ss(P,A,dst(M1),sid(M2))) = choice(M2) and
+        pms(ss(P,A,dst(M1),sid(M2))) = pms(A,dst(M1),S)) .
+  --
+  ceq nw(cfin2(P,A,S,M1,M2)) 
+      = cf2(A,A,dst(M1),ecfin2(k(A,pms(A,dst(M1),S),rand(M1),rand(M2)),
+                             cfin2(A,dst(M1),sid(M2),choice(M2),rand(M1),rand(M2),pms(A,dst(M1),S)))) , nw(P)
+      if c-cfin2(P,A,S,M1,M2) .
+  eq  ss(cfin2(P,A,S,M1,M2),A2,B2,I2) = ss(P,A2,B2,I2) .
+  eq  ur(cfin2(P,A,S,M1,M2)) = ur(P) .
+  eq  ui(cfin2(P,A,S,M1,M2)) = ui(P) .
+  eq  us(cfin2(P,A,S,M1,M2)) = us(P) .
+  ceq cfin2(P,A,S,M1,M2)     = P if not c-cfin2(P,A,S,M1,M2) .
+-- sfin2
+  op c-sfin2 : Protocol Prin Msg Msg Msg -> Bool
+  eq c-sfin2(P,B,M1,M2,M3)
+     = (M1 \in nw(P) and M2 \in nw(P) and M3 \in nw(P) and ch2?(M1) and sh2?(M2) and cf2?(M3) and
+        crt(M2) = B and src(M2) = B and src(M1) = dst(M2) and dst(M1) = B and src(M3) = dst(M2) and dst(M3) = B and
+        sid(M1) = sid(M2) and 
+        not(ss(P,dst(M2),B,sid(M2)) = none) and choice(ss(P,dst(M2),B,sid(M2))) = choice(M2) and
+        ecfin2(M3) = ecfin2(k(dst(M2),pms(ss(P,dst(M2),B,sid(M2))),rand(M1),rand(M2)),
+                        cfin2(dst(M2),B,sid(M2),choice(M2),rand(M1),rand(M2),pms(ss(P,dst(M2),B,sid(M2)))))) .
+  --
+  ceq nw(sfin2(P,B,M1,M2,M3))
+      = sf2(B,B,dst(M2),esfin2(k(B,pms(ss(P,dst(M2),B,sid(M2))),rand(M1),rand(M2)),
+                        sfin2(dst(M2),B,sid(M2),choice(M2),rand(M1),rand(M2),pms(ss(P,dst(M2),B,sid(M2)))))) , nw(P)
+      if c-sfin2(P,B,M1,M2,M3) .
+  ceq ss(sfin2(P,B,M1,M2,M3),A2,B2,I2)
+      = (if (A2 = dst(M2) and B2 = B and I2 = sid(M2)) then st(choice(M2),rand(M1),rand(M2),pms(ss(P,dst(M2),B,sid(M2))))
+                                                        else ss(P,A2,B2,I2) fi)
+      if c-sfin2(P,B,M1,M2,M3) .
+  eq  ur(sfin2(P,B,M1,M2,M3)) = ur(P) .
+  eq  ui(sfin2(P,B,M1,M2,M3)) = ui(P) .
+  eq  us(sfin2(P,B,M1,M2,M3)) = us(P) .
+  ceq sfin2(P,B,M1,M2,M3)     = P if not c-sfin2(P,B,M1,M2,M3) .
+-- compl2
+  op c-compl2 : Protocol Prin Secret Msg Msg Msg Msg -> Bool
+  eq c-compl2(P,A,S,M1,M2,M3,M4)
+     = (M1 \in nw(P) and M2 \in nw(P) and M3 \in nw(P) and M4 \in nw(P) and 
+        ch2?(M1) and sh2?(M2) and cf2?(M3) and sf2?(M4) and
+        crt(M1) = A and src(M1) = A and crt(M3) = A and src(M3) = A and dst(M3) = dst(M1) and
+        src(M2) = dst(M1) and dst(M2) = A and src(M4) = dst(M1) and dst(M4) = A and
+        sid(M1) = sid(M2) and 
+        not(ss(P,A,dst(M1),sid(M2)) = none) and choice(ss(P,A,dst(M1),sid(M2))) = choice(M2) and
+        pms(ss(P,A,dst(M1),sid(M2))) = pms(A,dst(M1),S) and
+        ecfin2(M3) = ecfin2(k(A,pms(A,dst(M1),S),rand(M1),rand(M2)),
+                        cfin2(A,dst(M1),sid(M2),choice(M2),rand(M1),rand(M2),pms(A,dst(M1),S))) and
+        esfin2(M4) = esfin2(k(dst(M1),pms(A,dst(M1),S),rand(M1),rand(M2)),
+                        sfin2(A,dst(M1),sid(M2),choice(M2),rand(M1),rand(M2),pms(A,dst(M1),S)))) .
+  --
+  eq  nw(compl2(P,A,S,M1,M2,M3,M4)) = nw(P) .
+  ceq ss(compl2(P,A,S,M1,M2,M3,M4),A2,B2,I2)
+      = (if (A2 = A and B2 = dst(M1) and I2 = sid(M2)) then st(choice(M2),rand(M1),rand(M2),pms(A,dst(M1),S))
+                                                       else ss(P,A2,B2,I2) fi)
+      if c-compl2(P,A,S,M1,M2,M3,M4) .
+  eq  ur(compl2(P,A,S,M1,M2,M3,M4)) = ur(P) .
+  eq  ui(compl2(P,A,S,M1,M2,M3,M4)) = ui(P) .
+  eq  us(compl2(P,A,S,M1,M2,M3,M4)) = us(P) .
+  ceq compl2(P,A,S,M1,M2,M3,M4)     = P if not c-compl2(P,A,S,M1,M2,M3,M4) .
+-- fakeChello
+  eq  nw(fakeChello(P,A,B,R,L)) = ch(intruder,A,B,R,L) , nw(P) .
+  eq  ss(fakeChello(P,A,B,R,L),A2,B2,I2) = ss(P,A2,B2,I2) .
+  eq  ur(fakeChello(P,A,B,R,L)) = ur(P) .
+  eq  ui(fakeChello(P,A,B,R,L)) = ui(P) .
+  eq  us(fakeChello(P,A,B,R,L)) = us(P) .
+-- fakeShello
+  eq  nw(fakeShello(P,B,A,R,I,C)) = sh(intruder,B,A,R,I,C) , nw(P) .
+  eq  ss(fakeShello(P,B,A,R,I,C),B2,A2,I2) = ss(P,B2,A2,I2) .
+  eq  ur(fakeShello(P,B,A,R,I,C)) = ur(P) .
+  eq  ui(fakeShello(P,B,A,R,I,C)) = ui(P) .
+  eq  us(fakeShello(P,B,A,R,I,C)) = us(P) .
+-- fakeCert
+  op c-fakeCert : Protocol Prin Prin PubKey Sig -> Bool
+  eq c-fakeCert(P,B,A,PK,G) = G \in csig(nw(P)) .
+  --
+  ceq nw(fakeCert(P,B,A,PK,G)) = ct(intruder,B,A,cert(B,PK,G)) , nw(P) if c-fakeCert(P,B,A,PK,G) .
+  eq  ss(fakeCert(P,B,A,PK,G),B2,A2,I2) = ss(P,B2,A2,I2) .
+  eq  ur(fakeCert(P,B,A,PK,G)) = ur(P) .
+  eq  ui(fakeCert(P,B,A,PK,G)) = ui(P) .
+  eq  us(fakeCert(P,B,A,PK,G)) = us(P) .
+  ceq fakeCert(P,B,A,PK,G)     = P if not c-fakeCert(P,B,A,PK,G) .
+-- fakeKexch1
+  op c-fakeKexch1 : Protocol Prin Prin EncPms -> Bool
+  eq c-fakeKexch1(P,A,B,EPMS) = EPMS \in cepms(nw(P)) .
+  --
+  ceq nw(fakeKexch1(P,A,B,EPMS)) = kx(intruder,A,B,EPMS) , nw(P) if c-fakeKexch1(P,A,B,EPMS) .
+  eq  ss(fakeKexch1(P,A,B,EPMS),A2,B2,I2) = ss(P,A2,B2,I2) .
+  eq  ur(fakeKexch1(P,A,B,EPMS)) = ur(P) .
+  eq  ui(fakeKexch1(P,A,B,EPMS)) = ui(P) .
+  eq  us(fakeKexch1(P,A,B,EPMS)) = us(P) .
+  ceq fakeKexch1(P,A,B,EPMS)     = P if not c-fakeKexch1(P,A,B,EPMS) .
+-- fakeKexch2
+  op c-fakeKexch2 : Protocol Prin Prin PubKey Pms -> Bool
+  eq c-fakeKexch2(P,A,B,PK,PMS) = PMS \in cpms(nw(P)) .
+  --
+  ceq nw(fakeKexch2(P,A,B,PK,PMS)) = kx(intruder,A,B,epms(PK,PMS)) , nw(P) if c-fakeKexch2(P,A,B,PK,PMS) .
+  eq  ss(fakeKexch2(P,A,B,PK,PMS),A2,B2,I2) = ss(P,A2,B2,I2) .
+  eq  ur(fakeKexch2(P,A,B,PK,PMS)) = ur(P) .
+  eq  ui(fakeKexch2(P,A,B,PK,PMS)) = ui(P) .
+  eq  us(fakeKexch2(P,A,B,PK,PMS)) = us(P) .
+  ceq fakeKexch2(P,A,B,PK,PMS)     = P if not c-fakeKexch2(P,A,B,PK,PMS) .
+-- fakeCfin1
+  op c-fakeCfin1 : Protocol Prin Prin EncCFin -> Bool
+  eq c-fakeCfin1(P,A,B,ECFIN) = ECFIN \in cecfin(nw(P)) .
+  --
+  ceq nw(fakeCfin1(P,A,B,ECFIN)) = cf(intruder,A,B,ECFIN) , nw(P) if c-fakeCfin1(P,A,B,ECFIN) .
+  eq  ss(fakeCfin1(P,A,B,ECFIN),A2,B2,I2) = ss(P,A2,B2,I2) .
+  eq  ur(fakeCfin1(P,A,B,ECFIN)) = ur(P) .
+  eq  ui(fakeCfin1(P,A,B,ECFIN)) = ui(P) .
+  eq  us(fakeCfin1(P,A,B,ECFIN)) = us(P) .
+  ceq fakeCfin1(P,A,B,ECFIN)     = P if not c-fakeCfin1(P,A,B,ECFIN) .
+-- fakeCfin2
+  op c-fakeCfin2 : Protocol Prin Prin Sid ListOfChoices Choice Rand Rand Pms -> Bool
+  eq c-fakeCfin2(P,A,B,I,L,C,R1,R2,PMS) = PMS \in cpms(nw(P)) .
+  --
+  ceq nw(fakeCfin2(P,A,B,I,L,C,R1,R2,PMS)) 
+      = cf(intruder,A,B,ecfin(k(A,PMS,R1,R2),cfin(A,B,I,L,C,R1,R2,PMS))) , nw(P) if c-fakeCfin2(P,A,B,I,L,C,R1,R2,PMS) .
+  eq  ss(fakeCfin2(P,A,B,I,L,C,R1,R2,PMS),A2,B2,I2) = ss(P,A2,B2,I2) .
+  eq  ur(fakeCfin2(P,A,B,I,L,C,R1,R2,PMS)) = ur(P) .
+  eq  ui(fakeCfin2(P,A,B,I,L,C,R1,R2,PMS)) = ui(P) .
+  eq  us(fakeCfin2(P,A,B,I,L,C,R1,R2,PMS)) = us(P) .
+  ceq fakeCfin2(P,A,B,I,L,C,R1,R2,PMS)     = P if not c-fakeCfin2(P,A,B,I,L,C,R1,R2,PMS) .
+-- fakeSfin1
+  op c-fakeSfin1 : Protocol Prin Prin EncSFin -> Bool
+  eq c-fakeSfin1(P,B,A,ESFIN) = ESFIN \in cesfin(nw(P)) .
+  --
+  ceq nw(fakeSfin1(P,B,A,ESFIN)) = sf(intruder,B,A,ESFIN) , nw(P) if c-fakeSfin1(P,B,A,ESFIN) .
+  eq  ss(fakeSfin1(P,B,A,ESFIN),B2,A2,I2) = ss(P,B2,A2,I2) .
+  eq  ur(fakeSfin1(P,B,A,ESFIN)) = ur(P) .
+  eq  ui(fakeSfin1(P,B,A,ESFIN)) = ui(P) .
+  eq  us(fakeSfin1(P,B,A,ESFIN)) = us(P) .
+  ceq fakeSfin1(P,B,A,ESFIN)     = P if not c-fakeSfin1(P,B,A,ESFIN) .
+-- fakeSfin2
+  op c-fakeSfin2 : Protocol Prin Prin Sid ListOfChoices Choice Rand Rand Pms -> Bool
+  eq c-fakeSfin2(P,B,A,I,L,C,R1,R2,PMS) = PMS \in cpms(nw(P)) .
+  --
+  ceq nw(fakeSfin2(P,B,A,I,L,C,R1,R2,PMS)) 
+      = sf(intruder,B,A,esfin(k(B,PMS,R1,R2),sfin(A,B,I,L,C,R1,R2,PMS))) , nw(P) if c-fakeSfin2(P,B,A,I,L,C,R1,R2,PMS) .
+  eq  ss(fakeSfin2(P,B,A,I,L,C,R1,R2,PMS),B2,A2,I2) = ss(P,B2,A2,I2) .
+  eq  ur(fakeSfin2(P,B,A,I,L,C,R1,R2,PMS)) = ur(P) .
+  eq  ui(fakeSfin2(P,B,A,I,L,C,R1,R2,PMS)) = ui(P) .
+  eq  us(fakeSfin2(P,B,A,I,L,C,R1,R2,PMS)) = us(P) .
+  ceq fakeSfin2(P,B,A,I,L,C,R1,R2,PMS)     = P if not c-fakeSfin2(P,B,A,I,L,C,R1,R2,PMS) .
+-- fakeChello2
+  eq  nw(fakeChello2(P,A,B,R,I)) = ch2(intruder,A,B,R,I) , nw(P) .
+  eq  ss(fakeChello2(P,A,B,R,I),A2,B2,I2) = ss(P,A2,B2,I2) .
+  eq  ur(fakeChello2(P,A,B,R,I)) = ur(P) .
+  eq  ui(fakeChello2(P,A,B,R,I)) = ui(P) .
+  eq  us(fakeChello2(P,A,B,R,I)) = us(P) .
+-- fakeShello2
+  eq  nw(fakeShello2(P,B,A,R,I,C)) = sh2(intruder,B,A,R,I,C) , nw(P) .
+  eq  ss(fakeShello2(P,B,A,R,I,C),B2,A2,I2) = ss(P,B2,A2,I2) .
+  eq  ur(fakeShello2(P,B,A,R,I,C)) = ur(P) .
+  eq  ui(fakeShello2(P,B,A,R,I,C)) = ui(P) .
+  eq  us(fakeShello2(P,B,A,R,I,C)) = us(P) .
+-- fakeCfin21
+  op c-fakeCfin21 : Protocol Prin Prin EncCFin2 -> Bool
+  eq c-fakeCfin21(P,A,B,ECFIN2) = ECFIN2 \in cecfin2(nw(P)) .
+  --
+  ceq nw(fakeCfin21(P,A,B,ECFIN2)) = cf2(intruder,A,B,ECFIN2) , nw(P) if c-fakeCfin21(P,A,B,ECFIN2) .
+  eq  ss(fakeCfin21(P,A,B,ECFIN2),A2,B2,I2) = ss(P,A2,B2,I2) .
+  eq  ur(fakeCfin21(P,A,B,ECFIN2)) = ur(P) .
+  eq  ui(fakeCfin21(P,A,B,ECFIN2)) = ui(P) .
+  eq  us(fakeCfin21(P,A,B,ECFIN2)) = us(P) .
+  ceq fakeCfin21(P,A,B,ECFIN2)     = P if not c-fakeCfin21(P,A,B,ECFIN2) .
+-- fakeCfin22
+  op c-fakeCfin22 : Protocol Prin Prin Sid Choice Rand Rand Pms -> Bool
+  eq c-fakeCfin22(P,A,B,I,C,R1,R2,PMS) = PMS \in cpms(nw(P)) .
+  --
+  ceq nw(fakeCfin22(P,A,B,I,C,R1,R2,PMS)) 
+      = cf2(intruder,A,B,ecfin2(k(A,PMS,R1,R2),cfin2(A,B,I,C,R1,R2,PMS))) , nw(P) if c-fakeCfin22(P,A,B,I,C,R1,R2,PMS) .
+  eq  ss(fakeCfin22(P,A,B,I,C,R1,R2,PMS),A2,B2,I2) = ss(P,A2,B2,I2) .
+  eq  ur(fakeCfin22(P,A,B,I,C,R1,R2,PMS)) = ur(P) .
+  eq  ui(fakeCfin22(P,A,B,I,C,R1,R2,PMS)) = ui(P) .
+  eq  us(fakeCfin22(P,A,B,I,C,R1,R2,PMS)) = us(P) .
+  ceq fakeCfin22(P,A,B,I,C,R1,R2,PMS)     = P if not c-fakeCfin22(P,A,B,I,C,R1,R2,PMS) .
+-- fakeSfin21
+  op c-fakeSfin21 : Protocol Prin Prin EncSFin2 -> Bool
+  eq c-fakeSfin21(P,B,A,ESFIN2) = ESFIN2 \in cesfin2(nw(P)) .
+  --
+  ceq nw(fakeSfin21(P,B,A,ESFIN2)) = sf2(intruder,B,A,ESFIN2) , nw(P) if c-fakeSfin21(P,B,A,ESFIN2) .
+  eq  ss(fakeSfin21(P,B,A,ESFIN2),B2,A2,I2) = ss(P,B2,A2,I2) .
+  eq  ur(fakeSfin21(P,B,A,ESFIN2)) = ur(P) .
+  eq  ui(fakeSfin21(P,B,A,ESFIN2)) = ui(P) .
+  eq  us(fakeSfin21(P,B,A,ESFIN2)) = us(P) .
+  ceq fakeSfin21(P,B,A,ESFIN2)     = P if not c-fakeSfin21(P,B,A,ESFIN2) .
+-- fakeSfin22
+  op c-fakeSfin22 : Protocol Prin Prin Sid Choice Rand Rand Pms -> Bool
+  eq c-fakeSfin22(P,B,A,I,C,R1,R2,PMS) = PMS \in cpms(nw(P)) .
+  --
+  ceq nw(fakeSfin22(P,B,A,I,C,R1,R2,PMS)) 
+      = sf2(intruder,B,A,esfin2(k(B,PMS,R1,R2),sfin2(A,B,I,C,R1,R2,PMS))) , nw(P) if c-fakeSfin22(P,B,A,I,C,R1,R2,PMS) .
+  eq  ss(fakeSfin22(P,B,A,I,C,R1,R2,PMS),B2,A2,I2) = ss(P,B2,A2,I2) .
+  eq  ur(fakeSfin22(P,B,A,I,C,R1,R2,PMS)) = ur(P) .
+  eq  ui(fakeSfin22(P,B,A,I,C,R1,R2,PMS)) = ui(P) .
+  eq  us(fakeSfin22(P,B,A,I,C,R1,R2,PMS)) = us(P) .
+  ceq fakeSfin22(P,B,A,I,C,R1,R2,PMS)     = P if not c-fakeSfin22(P,B,A,I,C,R1,R2,PMS) .
+}
+
+mod INV {
+  pr(TLS)
+-- arbitrary objects
+  -- op p : -> Protocol
+  -- ops a b a1 b1 b2 b3 : -> Prin
+  -- ops r1 r2 : -> Rand
+  -- op l : -> ListOfChoices 
+  -- op c : -> Choice 
+  -- op i : -> Sid 
+  -- op s : -> Secret
+  -- op pms : -> Pms
+  -- op epms : -> EncPms 
+  -- op k : -> PubKey
+-- declare invariants to prove
+  op inv1 : Protocol Pms -> Bool
+  op inv2 : Protocol EncPms -> Bool
+  op inv3 : Protocol Prin Prin Prin Rand Rand ListOfChoices Choice Sid Secret -> Bool
+  op inv4 : Protocol Prin Prin Rand Rand ListOfChoices Choice Sid Secret -> Bool
+  op inv5 : Protocol Prin Prin Prin Rand Rand Choice Sid Secret -> Bool
+  op inv6 : Protocol Prin Prin Rand Rand Choice Sid Secret -> Bool
+  op inv7 : Protocol Prin Prin Rand Rand ListOfChoices Choice Sid Secret -> Bool
+  op inv8 : Protocol Prin Prin Rand Rand ListOfChoices Choice Sid Secret -> Bool
+  op inv9 : Protocol Prin PubKey -> Bool
+  op inv10 : Protocol Prin Prin Rand Choice Sid -> Bool
+  op inv11 : Protocol Prin Prin PubKey -> Bool
+  op inv12 : Protocol Prin Prin Prin Rand Rand ListOfChoices Choice Sid Secret -> Bool
+  op inv13 : Protocol Prin Prin Prin Rand Rand ListOfChoices Choice Sid Secret PubKey -> Bool
+  op inv14 : Protocol Prin Prin Rand Rand Choice Sid Secret -> Bool
+  op inv15 : Protocol Prin Prin Rand Choice Sid -> Bool
+  op inv16 : Protocol Prin Prin Prin Rand Rand Choice Sid Secret -> Bool
+  op inv17 : Protocol Prin Prin Prin Prin Prin Rand Rand ListOfChoices Choice Sid Secret PubKey -> Bool
+  op inv18 : Protocol Prin Prin Prin Prin Rand Rand Choice Sid Secret -> Bool
+
+-- CafeOBJ variables
+  var P : Protocol
+  vars A A1 B B1 B2 B3 : Prin
+  vars R1 R2 : Rand
+  var L : ListOfChoices
+  var C : Choice
+  var I : Sid
+  var S : Secret 
+  var PMS : Pms
+  var EPMS : EncPms
+  var K : PubKey
+-- define invariants to prove
+  eq inv1(P,PMS) = (PMS \in cpms(nw(P)) implies (client(PMS) = intruder or server(PMS) = intruder)) .
+  eq inv2(P,EPMS) = (EPMS \in cepms(nw(P)) implies not(owner(k(EPMS)) = intruder)) .
+  eq inv3(P,A,B,B1,R1,R2,L,C,I,S)
+     = (not(A = intruder) and
+        sf(B1,B,A,esfin(k(B,pms(A,B,S),R1,R2),sfin(A,B,I,L,C,R1,R2,pms(A,B,S)))) \in nw(P)
+        implies
+        sf(B,B,A,esfin(k(B,pms(A,B,S),R1,R2),sfin(A,B,I,L,C,R1,R2,pms(A,B,S)))) \in nw(P)) .
+  eq inv4(P,A,B,R1,R2,L,C,I,S)
+     = (not(A = intruder) and
+        esfin(k(B,pms(A,B,S),R1,R2),sfin(A,B,I,L,C,R1,R2,pms(A,B,S))) \in cesfin(nw(P))
+        implies
+        sf(B,B,A,esfin(k(B,pms(A,B,S),R1,R2),sfin(A,B,I,L,C,R1,R2,pms(A,B,S)))) \in nw(P)) .
+  eq inv5(P,A,B,B1,R1,R2,C,I,S)
+     = (not(A = intruder) and
+        sf2(B1,B,A,esfin2(k(B,pms(A,B,S),R1,R2),sfin2(A,B,I,C,R1,R2,pms(A,B,S)))) \in nw(P)
+        implies
+        sf2(B,B,A,esfin2(k(B,pms(A,B,S),R1,R2),sfin2(A,B,I,C,R1,R2,pms(A,B,S)))) \in nw(P)) .
+  eq inv6(P,A,B,R1,R2,C,I,S)
+     = (not(A = intruder) and
+        esfin2(k(B,pms(A,B,S),R1,R2),sfin2(A,B,I,C,R1,R2,pms(A,B,S))) \in cesfin2(nw(P))
+        implies
+        sf2(B,B,A,esfin2(k(B,pms(A,B,S),R1,R2),sfin2(A,B,I,C,R1,R2,pms(A,B,S)))) \in nw(P)) .
+  eq inv7(P,A,B,R1,R2,L,C,I,S)
+     = (not(A = intruder) and not(B = intruder) and
+        sf(B,B,A,esfin(k(B,pms(A,B,S),R1,R2),sfin(A,B,I,L,C,R1,R2,pms(A,B,S)))) \in nw(P)
+        implies
+        sh(B,B,A,R2,I,C) \in nw(P)) .
+  eq inv8(P,A,B,R1,R2,L,C,I,S)
+     = (not(A = intruder) and not(B = intruder) and
+        sf(B,B,A,esfin(k(B,pms(A,B,S),R1,R2),sfin(A,B,I,L,C,R1,R2,pms(A,B,S)))) \in nw(P)
+        implies
+        ct(B,B,A,cert(B,k(B),sig(ca,B,k(B)))) \in nw(P)) .
+  eq inv9(P,A,K) = (sig(ca,A,K) \in csig(nw(P)) implies K = k(A)) .
+  eq inv10(P,A,B,R1,C,I) = (sh(B,intruder,A,R1,I,C) \in nw(P) implies B = intruder) .
+  eq inv11(P,A,B,K) = (ct(B,intruder,A,cert(intruder,K,sig(ca,intruder,K))) \in nw(P) implies B = intruder) .
+  eq inv12(P,A,B,B1,R1,R2,L,C,I,S)
+     = (not(A = intruder) and 
+        sh(B1,B,A,R2,I,C) \in nw(P) and
+        sf(B,B,A,esfin(k(B,pms(A,B,S),R1,R2),sfin(A,B,I,L,C,R1,R2,pms(A,B,S)))) \in nw(P)
+        implies
+        sh(B,B,A,R2,I,C) \in nw(P)) .
+  eq inv13(P,A,B,B1,R1,R2,L,C,I,S,K)
+     = (not(A = intruder) and 
+        ct(B1,B,A,cert(B,K,sig(ca,B,K))) \in nw(P) and
+        sf(B,B,A,esfin(k(B,pms(A,B,S),R1,R2),sfin(A,B,I,L,C,R1,R2,pms(A,B,S)))) \in nw(P)
+        implies
+        ct(B,B,A,cert(B,K,sig(ca,B,K))) \in nw(P)) .
+  eq inv14(P,A,B,R1,R2,C,I,S)
+     = (not(A = intruder) and not(B = intruder) and
+        sf2(B,B,A,esfin2(k(B,pms(A,B,S),R1,R2),sfin2(A,B,I,C,R1,R2,pms(A,B,S)))) \in nw(P)
+        implies
+        sh2(B,B,A,R2,I,C) \in nw(P)) .
+  eq inv15(P,A,B,R1,C,I) = (sh2(B,intruder,A,R1,I,C) \in nw(P) implies B = intruder) .
+  eq inv16(P,A,B,B1,R1,R2,C,I,S)
+     = (not(A = intruder) and 
+        sh2(B1,B,A,R2,I,C) \in nw(P) and
+        sf2(B,B,A,esfin2(k(B,pms(A,B,S),R1,R2),sfin2(A,B,I,C,R1,R2,pms(A,B,S)))) \in nw(P)
+        implies
+        sh2(B,B,A,R2,I,C) \in nw(P)) .
+  eq inv17(P,A,B,B1,B2,B3,R1,R2,L,C,I,S,K)
+     = (not(A = intruder) and
+        sh(B1,B,A,R2,I,C) \in nw(P) and
+        ct(B2,B,A,cert(B,K,sig(ca,B,K))) \in nw(P) and
+        sf(B3,B,A,esfin(k(B,pms(A,B,S),R1,R2),sfin(A,B,I,L,C,R1,R2,pms(A,B,S)))) \in nw(P)
+        implies
+        sh(B,B,A,R2,I,C) \in nw(P) and
+        ct(B,B,A,cert(B,K,sig(ca,B,K))) \in nw(P)) .
+  eq inv18(P,A,B,B1,B2,R1,R2,C,I,S)
+     = (not(A = intruder) and
+        sh2(B1,B,A,R2,I,C) \in nw(P) and
+        sf2(B2,B,A,esfin2(k(B,pms(A,B,S),R1,R2),sfin2(A,B,I,C,R1,R2,pms(A,B,S)))) \in nw(P)
+        implies
+        sh2(B,B,A,R2,I,C) \in nw(P)) .
+
+}
