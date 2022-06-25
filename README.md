@@ -1,4 +1,4 @@
-## TLS 1.0 Handshake Protocol Formal Verification Case Study: How to Use a Proof Script Generator for Existing Large Proof Scores 
+## Using CiMPG for existing large proof scores of TLS 1.0
 
 ----
 
