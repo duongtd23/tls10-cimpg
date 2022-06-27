@@ -1,0 +1,229 @@
+mod! PRINCIPAL {
+  [Prin]
+  op intruder : -> Prin
+}
+
+mod! KEY {
+  pr(PRINCIPAL)
+  [Key]
+  op k : Prin -> Key
+  op p : Key -> Prin
+  var A : Prin
+  vars K1 K2 : Key
+  eq p(k(A)) = A .
+  ceq (K1 = K2) = true if not(p(K1) = intruder) and not(p(K2) = intruder) .
+  ceq (K1 = K2) = false if not(p(K1) = intruder) and p(K2) = intruder .
+}
+
+mod! RAND {
+  [Rand]
+}
+
+mod! CIPHER {
+  pr(PRINCIPAL + KEY + RAND)
+  [Cipher]
+  op enc : Key Rand Prin -> Cipher
+  op k : Cipher -> Key
+  op r : Cipher -> Rand
+  op p : Cipher -> Prin
+  var K : Key
+  var R : Rand
+  var A : Prin
+  vars C1 C2 : Cipher
+  eq k(enc(K,R,A)) = K .
+  eq r(enc(K,R,A)) = R .
+  eq p(enc(K,R,A)) = A .
+  eq (C1 = C2) = (k(C1) = k(C2) and r(C1) = r(C2) and p(C1) = p(C2)) .
+}
+
+mod! MSG {
+  pr(PRINCIPAL + RAND + CIPHER)
+  [Msg]
+  --      creator source destination body
+  --      ---------------------------------
+  op chm : Prin    Prin   Prin        Rand   -> Msg
+  op rem : Prin    Prin   Prin        Cipher -> Msg
+  --
+  op chm? : Msg -> Bool
+  op rem? : Msg -> Bool
+  op crt : Msg -> Prin
+  op src : Msg -> Prin
+  op dst : Msg -> Prin
+  op r : Msg -> Rand
+  op c : Msg -> Cipher
+  --
+  vars A1 A B : Prin
+  var R : Rand
+  var C : Cipher
+  vars M1 M2 : Msg
+  --
+  eq chm?(chm(A1,A,B,R)) = true .
+  eq chm?(rem(A1,A,B,C)) = false .
+  eq rem?(chm(A1,A,B,R)) = false .
+  eq rem?(rem(A1,A,B,C)) = true .
+  eq crt(chm(A1,A,B,R)) = A1 .
+  eq crt(rem(A1,A,B,C)) = A1 .
+  eq src(chm(A1,A,B,R)) = A .
+  eq src(rem(A1,A,B,C)) = A .
+  eq dst(chm(A1,A,B,R)) = B .
+  eq dst(rem(A1,A,B,C)) = B .
+  eq r(chm(A1,A,B,R)) = R .
+  eq c(rem(A1,A,B,C)) = C .
+  --
+  ceq (M1 = M2) = (chm?(M1) and crt(M1) = crt(M2) and src(M1) = src(M2) and dst(M1) = dst(M2) and r(M1) = r(M2)) if chm?(M2) .
+  ceq (M1 = M2) = (rem?(M1) and crt(M1) = crt(M2) and src(M1) = src(M2) and dst(M1) = dst(M2) and c(M1) = c(M2)) if rem?(M2) .
+}
+
+mod! BAG (D :: TRIV) {
+  [Elt.D < Bag]
+  op void : -> Bag
+  op _,_ : Bag Bag -> Bag { assoc comm id: void }
+  op _\in_ : Elt.D Bag -> Bool
+  var B : Bag
+  vars E1 E2 : Elt.D
+  eq E1 \in void = false .
+  ceq E1 \in (E2,B) = true if E1 = E2 .
+  ceq E1 \in (E2,B) = E1 \in B if not(E1 = E2) .
+}
+
+mod! SET (D :: TRIV) {
+  [Elt.D < Set]
+  op empty : -> Set
+  op __ : Set Set -> Set { assoc comm idem id: empty }
+  op _\in_ : Elt.D Set -> Bool
+  var S : Set
+  vars E1 E2 : Elt.D
+  eq E1 \in empty = false .
+  ceq E1 \in (E2 S) = true if E1 = E2 .
+  ceq E1 \in (E2 S) = E1 \in S if not(E1 = E2) .
+}
+
+mod! COLLECTION(D :: TRIV) {
+  [Elt.D < Col]
+  op _\in_ : Elt.D Col -> Bool
+}
+
+view TRIV2MSG from TRIV to MSG {
+  sort Elt -> Msg
+}
+view TRIV2CIPHER from TRIV to CIPHER {
+  sort Elt -> Cipher
+}
+view TRIV2RAND from TRIV to RAND {
+  sort Elt -> Rand
+}
+
+mod! NETWORK {
+  pr(BAG(D <= TRIV2MSG)*{ sort Bag -> Network })
+  pr(COLLECTION(D <= TRIV2RAND)*{sort Col -> ColRands})
+  pr(COLLECTION(D <= TRIV2CIPHER)*{sort Col -> ColCiphers})
+--
+  op rands : Network -> ColRands
+  op ciphers : Network -> ColCiphers
+--
+  var NW : Network
+  var M : Msg
+  var R : Rand
+  var C : Cipher
+-- rands
+  eq R \in rands(void) = false .
+  ceq R \in rands(M,NW) = true if chm?(M) and R = r(M) .
+  ceq R \in rands(M,NW) = true if rem?(M) and k(intruder) = k(c(M)) and R = r(c(M)) .
+  ceq R \in rands(M,NW) = R \in rands(NW)
+      if not(chm?(M) and R = r(M)) and
+         not(rem?(M) and k(intruder) = k(c(M)) and R = r(c(M))) .
+-- ciphers
+  eq C \in ciphers(void) = false .
+  ceq C \in ciphers(M,NW) = true if rem?(M) and C = c(M) .
+  ceq C \in ciphers(M,NW) = C \in ciphers(NW) if not(rem?(M) and C = c(M)) .
+
+-- lemmas, add by @duongtd 21/01/16
+  op lm1 : Cipher Cipher ColCiphers -> Bool .
+  var C' : Cipher .
+  var CS : ColCiphers .
+  eq lm1(C, C', CS) = (C = C' and C \in CS implies C' \in CS) .
+}
+
+--
+-- Identify-Friend-or-Foe System
+--
+mod* IFF {
+  pr(NETWORK)
+  pr(SET(D <= TRIV2RAND)*{sort Set -> URands})
+  [Protocol]
+-- an arbitrary initial state
+  op init : -> Protocol {constr}
+-- observations
+  op nw : Protocol -> Network
+  op ur : Protocol -> URands
+-- actions
+  op sdchm : Protocol Prin Prin Rand -> Protocol {constr}
+  op sdrem : Protocol Prin Msg -> Protocol {constr}
+  --
+  op fkchm1 : Protocol Prin Prin Rand -> Protocol {constr}
+  op fkrem1 : Protocol Prin Prin Cipher -> Protocol {constr}
+  op fkrem2 : Protocol Prin Prin Rand -> Protocol {constr}
+
+-- CafeOBJ variables
+  var P : Protocol
+  vars A B B1 : Prin
+  vars M1 M2 : Msg
+  var R : Rand
+  var C : Cipher
+  var K : Key
+
+-- for any initial state
+  eq nw(init) = void .
+  eq ur(init) = empty .
+
+-- for action sdchm
+  op c-sdchm : Protocol Prin Prin Rand -> Bool
+  eq c-sdchm(P,A,B,R) = (not (R \in ur(P))) .
+  --
+  ceq nw(sdchm(P,A,B,R)) = (chm(A,A,B,R) , nw(P)) if c-sdchm(P,A,B,R) .
+  ceq ur(sdchm(P,A,B,R)) = (R ur(P))                if c-sdchm(P,A,B,R) .
+  ceq sdchm(P,A,B,R)     = P                      if not c-sdchm(P,A,B,R) .
+
+-- for action sdrem
+  op c-sdrem : Protocol Prin Msg -> Bool
+  eq c-sdrem(P,A,M1) = (M1 \in nw(P) and chm?(M1) and A = dst(M1)) .
+  --
+  ceq nw(sdrem(P,A,M1)) = rem(A,A,src(M1),enc(k(A),r(M1),A)) , nw(P) if c-sdrem(P,A,M1) .
+  eq ur(sdrem(P,A,M1))  = ur(P) .
+  ceq sdrem(P,A,M1)     = P                                             if not c-sdrem(P,A,M1) .
+
+-- for action fkchm1
+  op c-fkchm1 : Protocol Prin Prin Rand -> Bool
+  eq c-fkchm1(P,A,B,R) = R \in rands(nw(P)) .
+  --
+  ceq nw(fkchm1(P,A,B,R)) = chm(intruder,A,B,R) , nw(P) if c-fkchm1(P,A,B,R) .
+  eq ur(fkchm1(P,A,B,R))  = ur(P) .
+  ceq fkchm1(P,A,B,R)     = P                         if not c-fkchm1(P,A,B,R) .
+
+-- for action fkrem1
+  op c-fkrem1 : Protocol Prin Prin Cipher -> Bool
+  eq c-fkrem1(P,A,B,C) = C \in ciphers(nw(P)) .
+  --
+  ceq nw(fkrem1(P,A,B,C)) = rem(intruder,A,B,C) , nw(P) if c-fkrem1(P,A,B,C) .
+  eq ur(fkrem1(P,A,B,C))  = ur(P) .
+  ceq fkrem1(P,A,B,C)     = P                         if not c-fkrem1(P,A,B,C) .
+
+-- for action fkrem2
+  op c-fkrem2 : Protocol Prin Prin Rand -> Bool
+  eq c-fkrem2(P,A,B,R) = R \in rands(nw(P)) .
+  --
+  ceq nw(fkrem2(P,A,B,R)) = rem(intruder,A,B,enc(k(intruder),R,A)) , nw(P) if c-fkrem2(P,A,B,R) .
+  eq ur(fkrem2(P,A,B,R))  = ur(P) .
+  ceq fkrem2(P,A,B,R)     = P                       if not c-fkrem2(P,A,B,R) .
+
+-- INV
+-- declare invariant candidates
+  op inv1 : Protocol Prin Prin Prin Key Rand -> Bool
+  op inv2 : Protocol Key Rand -> Bool
+
+-- define invariant candidates
+  eq inv1(P,B1,B,A,K,R) = ((not(K = k(intruder)) and rem(B1,B,A,enc(K,R,B)) \in nw(P)) 
+    implies not(B = intruder)) .
+  eq inv2(P,K,R) = (enc(K,R,intruder) \in ciphers(nw(P)) implies (K = k(intruder))) .
+
+}
