@@ -1,4 +1,5 @@
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -9,6 +10,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -23,6 +25,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -37,6 +40,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -57,6 +61,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -79,6 +84,7 @@ close
 
 -- use inv2 as a lemma
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -100,6 +106,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -119,6 +126,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -137,6 +145,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -155,6 +164,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -173,6 +183,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -190,6 +201,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -207,6 +219,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -223,6 +236,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -239,6 +253,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -254,6 +269,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -270,6 +286,7 @@ close
 
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -287,6 +304,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -304,6 +322,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -320,6 +339,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -335,6 +355,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -349,6 +370,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -363,6 +385,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -377,6 +400,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -396,6 +420,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -415,6 +440,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -433,6 +459,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -451,6 +478,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -471,6 +499,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -491,6 +520,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -510,6 +540,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -526,6 +557,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -541,6 +573,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -555,6 +588,7 @@ open IFF .
 close
 
 open IFF .
+  :id(iff)
 	op a : -> Prin .
 	op b : -> Prin .
 	op b1 : -> Prin .
@@ -565,4 +599,201 @@ open IFF .
 	op p : -> Protocol .
 	eq (dst(r2) = r1) = false .
 	red inv1(p,a,b,b1,k,r) implies inv1(sdrm(p,r1,r2),a,b,b1,k,r) .
+close
+
+open IFF .
+  :id(iff)
+	op k : -> Key .
+	op r : -> Rand .
+	op p : -> Protocol .
+	red inv2(init,k,r) .
+close
+
+open IFF .
+  :id(iff)
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Prin .
+	op r3 : -> Rand .
+	op p : -> Protocol .
+	eq (r3 \in rands(nw(p))) = true .
+	red inv2(p,k,r) implies inv2(fkcm1(p,r1,r2,r3),k,r) .
+close
+
+open IFF .
+  :id(iff)
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Prin .
+	op r3 : -> Rand .
+	op p : -> Protocol .
+	eq (r3 \in rands(nw(p))) = false .
+	red inv2(p,k,r) implies inv2(fkcm1(p,r1,r2,r3),k,r) .
+close
+
+open IFF .
+  :id(iff)
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Prin .
+	op r3 : -> Cipher .
+	op p : -> Protocol .
+	eq (r3 \in ciphers(nw(p))) = true .
+	eq r3 = enc(k,r,intruder) .
+	eq (enc(k,r,intruder) \in ciphers(nw(p))) = true .
+	red inv2(p,k,r) implies inv2(fkrm1(p,r1,r2,r3),k,r) .
+close
+
+open IFF .
+  :id(iff)
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Prin .
+	op r3 : -> Cipher .
+	op p : -> Protocol .
+	eq (r3 \in ciphers(nw(p))) = true .
+	eq r3 = enc(k,r,intruder) .
+	eq (enc(k,r,intruder) \in ciphers(nw(p))) = false .
+	red inv2(p,k,r) implies inv2(fkrm1(p,r1,r2,r3),k,r) .
+close
+
+open IFF .
+  :id(iff)
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Prin .
+	op r3 : -> Cipher .
+	op p : -> Protocol .
+	eq (r3 \in ciphers(nw(p))) = true .
+	eq (r3 = enc(k,r,intruder)) = false .
+	red inv2(p,k,r) implies inv2(fkrm1(p,r1,r2,r3),k,r) .
+close
+
+open IFF .
+  :id(iff)
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Prin .
+	op r3 : -> Cipher .
+	op p : -> Protocol .
+	eq (r3 \in ciphers(nw(p))) = false .
+	red inv2(p,k,r) implies inv2(fkrm1(p,r1,r2,r3),k,r) .
+close
+
+open IFF .
+  :id(iff)
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Prin .
+	op r3 : -> Rand .
+	op p : -> Protocol .
+	eq (r3 \in rands(nw(p))) = true .
+	red inv2(p,k,r) implies inv2(fkrm2(p,r1,r2,r3),k,r) .
+close
+
+open IFF .
+  :id(iff)
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Prin .
+	op r3 : -> Rand .
+	op p : -> Protocol .
+	eq (r3 \in rands(nw(p))) = false .
+	red inv2(p,k,r) implies inv2(fkrm2(p,r1,r2,r3),k,r) .
+close
+
+open IFF .
+  :id(iff)
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Prin .
+	op r3 : -> Rand .
+	op p : -> Protocol .
+	eq (r3 \in ur(p)) = true .
+	red inv2(p,k,r) implies inv2(sdcm(p,r1,r2,r3),k,r) .
+close
+
+open IFF .
+  :id(iff)
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Prin .
+	op r3 : -> Rand .
+	op p : -> Protocol .
+	eq (r3 \in ur(p)) = false .
+	red inv2(p,k,r) implies inv2(sdcm(p,r1,r2,r3),k,r) .
+close
+
+open IFF .
+  :id(iff)
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Msg .
+	op p : -> Protocol .
+	eq dst(r2) = r1 .
+	eq cm?(r2) = true .
+	eq (r2 \in nw(p)) = true .
+	eq r1 = intruder .
+	red inv2(p,k,r) implies inv2(sdrm(p,r1,r2),k,r) .
+close
+
+open IFF .
+  :id(iff)
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Msg .
+	op p : -> Protocol .
+	eq dst(r2) = r1 .
+	eq cm?(r2) = true .
+	eq (r2 \in nw(p)) = true .
+	eq (r1 = intruder) = false .
+	red inv2(p,k,r) implies inv2(sdrm(p,r1,r2),k,r) .
+close
+
+open IFF .
+  :id(iff)
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Msg .
+	op p : -> Protocol .
+	eq dst(r2) = r1 .
+	eq cm?(r2) = true .
+	eq (r2 \in nw(p)) = false .
+	red inv2(p,k,r) implies inv2(sdrm(p,r1,r2),k,r) .
+close
+
+open IFF .
+  :id(iff)
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Msg .
+	op p : -> Protocol .
+	eq dst(r2) = r1 .
+	eq cm?(r2) = false .
+	red inv2(p,k,r) implies inv2(sdrm(p,r1,r2),k,r) .
+close
+
+open IFF .
+  :id(iff)
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Msg .
+	op p : -> Protocol .
+	eq (dst(r2) = r1) = false .
+	red inv2(p,k,r) implies inv2(sdrm(p,r1,r2),k,r) .
 close

@@ -1,5 +1,4 @@
 
-:proven(lm1(CI:Cipher, CI2:Cipher, CIS:ColCiphers))
 :goal{
 eq [iff1 :nonexec] : inv1(P:Protocol, P2:Prin, P1:Prin, P0:Prin, K:Key, R:Rand)  = true .
  eq [iff :nonexec] : inv2(P:Protocol, K:Key, R:Rand)  = true .
@@ -37,7 +36,7 @@ eq [iff1 :nonexec] : inv1(P:Protocol, P2:Prin, P1:Prin, P0:Prin, K:Key, R:Rand) 
 :sel(2)
 	:apply(tc)
 
-	:def csb1#2 = :ctf [C#Cipher \in ciphers(nw(P#Protocol))  .]
+	:def csb1#2 = :ctf {eq C#Cipher  = enc(K@Key, R@Rand, P1@Prin) .}
 
 	:apply(csb1#2)
 
@@ -49,23 +48,27 @@ eq [iff1 :nonexec] : inv1(P:Protocol, P2:Prin, P1:Prin, P0:Prin, K:Key, R:Rand) 
 
 	:apply(csb3#2)
 
-	:def csb4#2 = :ctf {eq P0#Prin  = P0@Prin .}
+	:def csb4#2 = :ctf {eq P0@Prin  = P0#Prin .}
 
 	:apply(csb4#2)
 
-	:def csb5#2 = :ctf {eq k(C#Cipher)  = K@Key .}
+	:def csb5#2 = :ctf {eq P1@Prin  = intruder .}
 
 	:apply(csb5#2)
 
-	:def csb6#2 = :ctf {eq r(C#Cipher)  = R@Rand .}
+	:def csb6#2 = :ctf [enc(K@Key, R@Rand, intruder) \in ciphers(nw(P#Protocol))  .]
 
 	:apply(csb6#2)
 
-	:def csb7#2 = :ctf {eq p(C#Cipher)  = P1@Prin .}
+	:def csb7#2 = :ctf {eq k(intruder)  = K@Key .}
 
 	:apply(csb7#2)
 
-	:def csb8#2 = :ctf {eq K@Key  = k(intruder) .}
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:def csb8#2 = :ctf [rm(intruder, intruder, P0#Prin, enc(K@Key, R@Rand, intruder)) \in nw(P#Protocol)  .]
 
 	:apply(csb8#2)
 
@@ -73,103 +76,79 @@ eq [iff1 :nonexec] : inv1(P:Protocol, P2:Prin, P1:Prin, P0:Prin, K:Key, R:Rand) 
 
 	:apply (rd)
 
-	:def csb9#2 = :ctf {eq P1@Prin  = intruder .}
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:imp [iff]  by {K:Key <- K@Key ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:def csb9#2 = :ctf [enc(K@Key, R@Rand, P1@Prin) \in ciphers(nw(P#Protocol))  .]
 
 	:apply(csb9#2)
 
-	:def csb10#2 = :ctf [enc(K@Key, R@Rand, intruder) \in ciphers(nw(P#Protocol))  .]
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:def csb10#2 = :ctf [enc(K@Key, R@Rand, P1@Prin) \in ciphers(nw(P#Protocol))  .]
 
 	:apply(csb10#2)
 
 	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
 
-	:imp [iff]  by {K:Key <- K@Key ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:imp [proven-goal0]  by {CI:Cipher <- C#Cipher ; CI2:Cipher <- enc(K@Key, R@Rand, intruder) ; CIS:ColCiphers <- ciphers(nw(P#Protocol)) ;}
-
 	:apply (rd)
 
 	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
 
 	:apply (rd)
 
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:def csb11#2 = :ctf [C#Cipher \in ciphers(nw(P#Protocol))  .]
+	:def csb11#2 = :ctf [enc(K@Key, R@Rand, P1@Prin) \in ciphers(nw(P#Protocol))  .]
 
 	:apply(csb11#2)
 
-	:def csb12#2 = :ctf {eq k(C#Cipher)  = K@Key .}
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:def csb12#2 = :ctf [C#Cipher \in ciphers(nw(P#Protocol))  .]
 
 	:apply(csb12#2)
 
-	:def csb13#2 = :ctf {eq r(C#Cipher)  = R@Rand .}
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:def csb13#2 = :ctf [C#Cipher \in ciphers(nw(P#Protocol))  .]
 
 	:apply(csb13#2)
 
-	:def csb14#2 = :ctf {eq p(C#Cipher)  = intruder .}
+	:def csb14#2 = :ctf {eq C#Cipher  = enc(K@Key, R@Rand, intruder) .}
 
 	:apply(csb14#2)
 
-	:imp [iff]  by {K:Key <- K@Key ; R:Rand <- R@Rand ;}
-
-	:imp [proven-goal0]  by {CI:Cipher <- C#Cipher ; CI2:Cipher <- enc(K@Key, R@Rand, intruder) ; CIS:ColCiphers <- ciphers(nw(P#Protocol)) ;}
-
-	:apply (rd)
-
-	:imp [iff]  by {K:Key <- K@Key ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff]  by {K:Key <- K@Key ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff]  by {K:Key <- K@Key ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:def csb15#2 = :ctf {eq k(C#Cipher)  = K@Key .}
+	:def csb15#2 = :ctf [enc(K@Key, R@Rand, intruder) \in ciphers(nw(P#Protocol))  .]
 
 	:apply(csb15#2)
-
-	:def csb16#2 = :ctf {eq r(C#Cipher)  = R@Rand .}
-
-	:apply(csb16#2)
-
-	:def csb17#2 = :ctf {eq p(C#Cipher)  = intruder .}
-
-	:apply(csb17#2)
 
 	:imp [iff]  by {K:Key <- K@Key ; R:Rand <- R@Rand ;}
 
@@ -195,41 +174,41 @@ eq [iff1 :nonexec] : inv1(P:Protocol, P2:Prin, P1:Prin, P0:Prin, K:Key, R:Rand) 
 
 	:apply(csb1#3)
 
-	:def csb2#3 = :ctf {eq P1@Prin  = intruder .}
+	:def csb2#3 = :ctf {eq R@Rand  = R#Rand .}
 
 	:apply(csb2#3)
 
-	:def csb3#3 = :ctf {eq k(intruder)  = K@Key .}
+	:def csb3#3 = :ctf {eq p(K@Key)  = intruder .}
 
 	:apply(csb3#3)
 
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:def csb4#3 = :ctf [R#Rand \in rands(nw(P#Protocol))  .]
+	:def csb4#3 = :ctf {eq k(intruder)  = K@Key .}
 
 	:apply(csb4#3)
 
-	:def csb5#3 = :ctf {eq k(intruder)  = K@Key .}
-
-	:apply(csb5#3)
-
-	:imp [iff]  by {K:Key <- K@Key ; R:Rand <- R@Rand ;}
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
 
 	:apply (rd)
+
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:def csb5#3 = :ctf [R#Rand \in rands(nw(P#Protocol))  .]
+
+	:apply(csb5#3)
 
 	:imp [iff]  by {K:Key <- K@Key ; R:Rand <- R@Rand ;}
 
@@ -279,113 +258,105 @@ eq [iff1 :nonexec] : inv1(P:Protocol, P2:Prin, P1:Prin, P0:Prin, K:Key, R:Rand) 
 :sel(6)
 	:apply(tc)
 
-	:def csb1#6 = :ctf [chm?(M#Msg)  .]
+	:def csb1#6 = :ctf {eq dst(M#Msg)  = P#Prin .}
 
 	:apply(csb1#6)
 
-	:def csb2#6 = :ctf [M#Msg \in nw(P#Protocol)  .]
+	:def csb2#6 = :ctf [cm?(M#Msg)  .]
 
 	:apply(csb2#6)
 
-	:def csb3#6 = :ctf {eq P#Prin  = dst(M#Msg) .}
+	:def csb3#6 = :ctf [M#Msg \in nw(P#Protocol)  .]
 
 	:apply(csb3#6)
 
-	:def csb4#6 = :ctf {eq P2@Prin  = dst(M#Msg) .}
+	:def csb4#6 = :ctf {eq r(M#Msg)  = R@Rand .}
 
 	:apply(csb4#6)
 
-	:def csb5#6 = :ctf {eq P0@Prin  = src(M#Msg) .}
+	:def csb5#6 = :ctf {eq P#Prin  = intruder .}
 
 	:apply(csb5#6)
 
-	:def csb6#6 = :ctf {eq K@Key  = k(dst(M#Msg)) .}
+	:def csb6#6 = :ctf {eq p(K@Key)  = intruder .}
 
 	:apply(csb6#6)
 
-	:def csb7#6 = :ctf {eq R@Rand  = r(M#Msg) .}
+	:def csb7#6 = :ctf {eq k(intruder)  = K@Key .}
 
 	:apply(csb7#6)
 
-	:def csb8#6 = :ctf {eq P1@Prin  = dst(M#Msg) .}
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:def csb8#6 = :ctf {eq p(K@Key)  = intruder .}
 
 	:apply(csb8#6)
 
-	:def csb9#6 = :ctf {eq dst(M#Msg)  = intruder .}
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:def csb9#6 = :ctf {eq P2@Prin  = P#Prin .}
 
 	:apply(csb9#6)
 
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:def csb10#6 = :ctf [chm?(M#Msg)  .]
+	:def csb10#6 = :ctf {eq P1@Prin  = P#Prin .}
 
 	:apply(csb10#6)
 
-	:def csb11#6 = :ctf [M#Msg \in nw(P#Protocol)  .]
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:imp [iff1]  by {K:Key <- K@Key ; P0:Prin <- P0@Prin ; P1:Prin <- P1@Prin ; P2:Prin <- P2@Prin ; R:Rand <- R@Rand ;}
+
+	:apply (rd)
+
+	:def csb11#6 = :ctf {eq dst(M#Msg)  = P#Prin .}
 
 	:apply(csb11#6)
 
-	:def csb12#6 = :ctf {eq P#Prin  = dst(M#Msg) .}
+	:def csb12#6 = :ctf [cm?(M#Msg)  .]
 
 	:apply(csb12#6)
 
-	:def csb13#6 = :ctf {eq K@Key  = k(dst(M#Msg)) .}
+	:def csb13#6 = :ctf [M#Msg \in nw(P#Protocol)  .]
 
 	:apply(csb13#6)
 
-	:def csb14#6 = :ctf {eq R@Rand  = r(M#Msg) .}
+	:def csb14#6 = :ctf {eq P#Prin  = intruder .}
 
 	:apply(csb14#6)
-
-	:def csb15#6 = :ctf {eq dst(M#Msg)  = intruder .}
-
-	:apply(csb15#6)
-
-	:imp [iff]  by {K:Key <- K@Key ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
-
-	:imp [iff]  by {K:Key <- K@Key ; R:Rand <- R@Rand ;}
-
-	:apply (rd)
 
 	:imp [iff]  by {K:Key <- K@Key ; R:Rand <- R@Rand ;}
 

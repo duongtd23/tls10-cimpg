@@ -1,288 +1,180 @@
---> I) Base case
---> init
 open IFF .
 	op k : -> Key .
 	op r : -> Rand .
+	op p : -> Protocol .
 	red inv2(init,k,r) .
 close
 
---> II) Induction cases
---> 1. fkchm1(p,r1,r2,r3)
 open IFF .
-	op p : -> Protocol .
 	op k : -> Key .
 	op r : -> Rand .
 	op r1 : -> Prin .
 	op r2 : -> Prin .
 	op r3 : -> Rand .
+	op p : -> Protocol .
 	eq (r3 \in rands(nw(p))) = true .
-	red inv2(p,k,r) implies inv2(fkchm1(p,r1,r2,r3),k,r) .
+	red inv2(p,k,r) implies inv2(fkcm1(p,r1,r2,r3),k,r) .
 close
 
 open IFF .
-	op p : -> Protocol .
 	op k : -> Key .
 	op r : -> Rand .
 	op r1 : -> Prin .
 	op r2 : -> Prin .
 	op r3 : -> Rand .
+	op p : -> Protocol .
 	eq (r3 \in rands(nw(p))) = false .
-	red inv2(p,k,r) implies inv2(fkchm1(p,r1,r2,r3),k,r) .
-close
-
---> 2. fkrem1(p,r1,r2,r3)
-open IFF .
-  ops r1 r2 : -> Prin .
-  op p : -> Protocol .
-  op k : -> Key .
-  op r : -> Rand .
-  op r3 : -> Cipher .
-  eq k(r3) = k .
-  eq r(r3) = r .
-  eq p(r3) = intruder .
-  eq r3 \in ciphers(nw(p)) = true .
-  red lm1(r3,enc(k,r,intruder),ciphers(nw(p)))
-  implies inv2(p,k,r) implies inv2(fkrem1(p,r1,r2,r3),k,r) .
+	red inv2(p,k,r) implies inv2(fkcm1(p,r1,r2,r3),k,r) .
 close
 
 open IFF .
-  ops r1 r2 : -> Prin .
-  op p : -> Protocol .
-  op k : -> Key .
-  op r : -> Rand .
-  op r3 : -> Cipher .
-  eq k(r3) = k .
-  eq r(r3) = r .
-  eq p(r3) = intruder .
-  eq r3 \in ciphers(nw(p)) = false .
-  red inv2(p,k,r) implies inv2(fkrem1(p,r1,r2,r3),k,r) .
-close
-
-open IFF .
-  ops r1 r2 : -> Prin .
-  op p : -> Protocol .
-  op k : -> Key .
-  op r : -> Rand .
-  op r3 : -> Cipher .
-  eq k(r3) = k .
-  eq r(r3) = r .
-  eq (p(r3) = intruder) = false .
-  eq r3 \in ciphers(nw(p)) = true .
-  red inv2(p,k,r) implies inv2(fkrem1(p,r1,r2,r3),k,r) .
-close
-
-open IFF .
-  ops r1 r2 : -> Prin .
-  op p : -> Protocol .
-  op k : -> Key .
-  op r : -> Rand .
-  op r3 : -> Cipher .
-  eq k(r3) = k .
-  eq r(r3) = r .
-  eq (p(r3) = intruder) = false .
-  eq r3 \in ciphers(nw(p)) = false .
-  red inv2(p,k,r) implies inv2(fkrem1(p,r1,r2,r3),k,r) .
-close
-
-open IFF .
-  ops r1 r2 : -> Prin .
-  op p : -> Protocol .
-  op k : -> Key .
-  op r : -> Rand .
-  op r3 : -> Cipher .
-  eq k(r3) = k .
-  eq (r(r3) = r) = false .
-  eq r3 \in ciphers(nw(p)) = true .
-  red inv2(p,k,r) implies inv2(fkrem1(p,r1,r2,r3),k,r) .
-close
-
-open IFF .
-  ops r1 r2 : -> Prin .
-  op p : -> Protocol .
-  op k : -> Key .
-  op r : -> Rand .
-  op r3 : -> Cipher .
-  eq k(r3) = k .
-  eq (r(r3) = r) = false .
-  eq r3 \in ciphers(nw(p)) = false .
-  red inv2(p,k,r) implies inv2(fkrem1(p,r1,r2,r3),k,r) .
-close
-
-open IFF .
-  ops r1 r2 : -> Prin .
-  op p : -> Protocol .
-  op k : -> Key .
-  op r : -> Rand .
-  op r3 : -> Cipher .
-  eq (k(r3) = k) = false .
-  eq r3 \in ciphers(nw(p)) = true .
-  red inv2(p,k,r) implies inv2(fkrem1(p,r1,r2,r3),k,r) .
-close
-
-open IFF .
-  ops r1 r2 : -> Prin .
-  op p : -> Protocol .
-  op k : -> Key .
-  op r : -> Rand .
-  op r3 : -> Cipher .
-  eq (k(r3) = k) = false .
-  eq r3 \in ciphers(nw(p)) = false .
-  red inv2(p,k,r) implies inv2(fkrem1(p,r1,r2,r3),k,r) .
-close
-
---> 3. fkrem2(p,r1,r2,r3)
-open IFF .
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Prin .
+	op r3 : -> Cipher .
 	op p : -> Protocol .
+	eq (r3 \in ciphers(nw(p))) = true .
+	eq r3 = enc(k,r,intruder) .
+	eq (enc(k,r,intruder) \in ciphers(nw(p))) = true .
+	red inv2(p,k,r) implies inv2(fkrm1(p,r1,r2,r3),k,r) .
+close
+
+open IFF .
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Prin .
+	op r3 : -> Cipher .
+	op p : -> Protocol .
+	eq (r3 \in ciphers(nw(p))) = true .
+	eq r3 = enc(k,r,intruder) .
+	eq (enc(k,r,intruder) \in ciphers(nw(p))) = false .
+	red inv2(p,k,r) implies inv2(fkrm1(p,r1,r2,r3),k,r) .
+close
+
+open IFF .
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Prin .
+	op r3 : -> Cipher .
+	op p : -> Protocol .
+	eq (r3 \in ciphers(nw(p))) = true .
+	eq (r3 = enc(k,r,intruder)) = false .
+	red inv2(p,k,r) implies inv2(fkrm1(p,r1,r2,r3),k,r) .
+close
+
+open IFF .
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Prin .
+	op r3 : -> Cipher .
+	op p : -> Protocol .
+	eq (r3 \in ciphers(nw(p))) = false .
+	red inv2(p,k,r) implies inv2(fkrm1(p,r1,r2,r3),k,r) .
+close
+
+open IFF .
 	op k : -> Key .
 	op r : -> Rand .
 	op r1 : -> Prin .
 	op r2 : -> Prin .
 	op r3 : -> Rand .
+	op p : -> Protocol .
 	eq (r3 \in rands(nw(p))) = true .
-	eq k(intruder) = k .
-	red inv2(p,k,r) implies inv2(fkrem2(p,r1,r2,r3),k,r) .
+	red inv2(p,k,r) implies inv2(fkrm2(p,r1,r2,r3),k,r) .
 close
 
 open IFF .
-	op p : -> Protocol .
 	op k : -> Key .
 	op r : -> Rand .
 	op r1 : -> Prin .
 	op r2 : -> Prin .
 	op r3 : -> Rand .
-	eq (r3 \in rands(nw(p))) = true .
-	eq (k(intruder) = k) = false .
-	red inv2(p,k,r) implies inv2(fkrem2(p,r1,r2,r3),k,r) .
-close
-
-open IFF .
 	op p : -> Protocol .
-	op k : -> Key .
-	op r : -> Rand .
-	op r1 : -> Prin .
-	op r2 : -> Prin .
-	op r3 : -> Rand .
 	eq (r3 \in rands(nw(p))) = false .
-	red inv2(p,k,r) implies inv2(fkrem2(p,r1,r2,r3),k,r) .
+	red inv2(p,k,r) implies inv2(fkrm2(p,r1,r2,r3),k,r) .
 close
 
---> 4. sdchm(p,r1,r2,r3)
 open IFF .
-	op p : -> Protocol .
 	op k : -> Key .
 	op r : -> Rand .
 	op r1 : -> Prin .
 	op r2 : -> Prin .
 	op r3 : -> Rand .
+	op p : -> Protocol .
 	eq (r3 \in ur(p)) = true .
-	red inv2(p,k,r) implies inv2(sdchm(p,r1,r2,r3),k,r) .
+	red inv2(p,k,r) implies inv2(sdcm(p,r1,r2,r3),k,r) .
 close
 
 open IFF .
-	op p : -> Protocol .
 	op k : -> Key .
 	op r : -> Rand .
 	op r1 : -> Prin .
 	op r2 : -> Prin .
 	op r3 : -> Rand .
+	op p : -> Protocol .
 	eq (r3 \in ur(p)) = false .
-	red inv2(p,k,r) implies inv2(sdchm(p,r1,r2,r3),k,r) .
-close
-
---> 5. sdrem(p,r1,r2,r3)
-open IFF .
-  op r1 : -> Prin .
-  op m1 : -> Msg .
-  op nw1 : -> Network .
-  op p : -> Protocol .
-  op k : -> Key .
-  op r : -> Rand .
-  eq chm?(m1) = true .
-  eq m1 \in nw(p) = true .
-  eq r1 = dst(m1) .
-  eq k = k(dst(m1)) .
-  eq r = r(m1) .
-  eq dst(m1) = intruder .
-  red inv2(p,k,r) implies inv2(sdrem(p,r1,m1),k,r) .
+	red inv2(p,k,r) implies inv2(sdcm(p,r1,r2,r3),k,r) .
 close
 
 open IFF .
-  op r1 : -> Prin .
-  op m1 : -> Msg .
-  op nw1 : -> Network .
-  op p : -> Protocol .
-  op k : -> Key .
-  op r : -> Rand .
-  eq chm?(m1) = true .
-  eq m1 \in nw(p) = true .
-  eq r1 = dst(m1) .
-  eq k = k(dst(m1)) .
-  eq r = r(m1) .
-  eq (dst(m1) = intruder) = false .
-  red inv2(p,k,r) implies inv2(sdrem(p,r1,m1),k,r) .
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Msg .
+	op p : -> Protocol .
+	eq dst(r2) = r1 .
+	eq cm?(r2) = true .
+	eq (r2 \in nw(p)) = true .
+	eq r1 = intruder .
+	red inv2(p,k,r) implies inv2(sdrm(p,r1,r2),k,r) .
 close
 
 open IFF .
-  op r1 : -> Prin .
-  op m1 : -> Msg .
-  op nw1 : -> Network .
-  op p : -> Protocol .
-  op k : -> Key .
-  op r : -> Rand .
-  eq chm?(m1) = true .
-  eq m1 \in nw(p) = true .
-  eq r1 = dst(m1) .
-  eq k = k(dst(m1)) .
-  eq (r = r(m1)) = false .
-  red inv2(p,k,r) implies inv2(sdrem(p,r1,m1),k,r) .
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Msg .
+	op p : -> Protocol .
+	eq dst(r2) = r1 .
+	eq cm?(r2) = true .
+	eq (r2 \in nw(p)) = true .
+	eq (r1 = intruder) = false .
+	red inv2(p,k,r) implies inv2(sdrm(p,r1,r2),k,r) .
 close
 
 open IFF .
-  op r1 : -> Prin .
-  op m1 : -> Msg .
-  op nw1 : -> Network .
-  op p : -> Protocol .
-  op k : -> Key .
-  op r : -> Rand .
-  eq chm?(m1) = true .
-  eq m1 \in nw(p) = true .
-  eq r1 = dst(m1) .
-  eq (k = k(dst(m1))) = false .
-  red inv2(p,k,r) implies inv2(sdrem(p,r1,m1),k,r) .
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Msg .
+	op p : -> Protocol .
+	eq dst(r2) = r1 .
+	eq cm?(r2) = true .
+	eq (r2 \in nw(p)) = false .
+	red inv2(p,k,r) implies inv2(sdrm(p,r1,r2),k,r) .
 close
 
 open IFF .
-  op r1 : -> Prin .
-  op m1 : -> Msg .
-  op nw1 : -> Network .
-  op p : -> Protocol .
-  op k : -> Key .
-  op r : -> Rand .
-  eq chm?(m1) = true .
-  eq m1 \in nw(p) = true .
-  eq (r1 = dst(m1)) = false .
-  red inv2(p,k,r) implies inv2(sdrem(p,r1,m1),k,r) .
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Msg .
+	op p : -> Protocol .
+	eq dst(r2) = r1 .
+	eq cm?(r2) = false .
+	red inv2(p,k,r) implies inv2(sdrm(p,r1,r2),k,r) .
 close
 
 open IFF .
-  op r1 : -> Prin .
-  op m1 : -> Msg .
-  op nw1 : -> Network .
-  op p : -> Protocol .
-  op k : -> Key .
-  op r : -> Rand .
-  eq chm?(m1) = true .
-  eq m1 \in nw(p) = false .
-  red inv2(p,k,r) implies inv2(sdrem(p,r1,m1),k,r) .
-close
-
-open IFF .
-  op r1 : -> Prin .
-  op m1 : -> Msg .
-  op nw1 : -> Network .
-  op p : -> Protocol .
-  op k : -> Key .
-  op r : -> Rand .
-  eq chm?(m1) = false .
-  red inv2(p,k,r) implies inv2(sdrem(p,r1,m1),k,r) .
+	op k : -> Key .
+	op r : -> Rand .
+	op r1 : -> Prin .
+	op r2 : -> Msg .
+	op p : -> Protocol .
+	eq (dst(r2) = r1) = false .
+	red inv2(p,k,r) implies inv2(sdrm(p,r1,r2),k,r) .
 close
