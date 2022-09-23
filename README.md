@@ -26,7 +26,7 @@ load generated-proofscripts/inv1.cafe .
 where the first command starts the CafeInMaude environment (`path-to-CafeInMaude` is the path of the CafeInMaude folder),
 the second command loads the specification,
 and the last command loads the proof scripts.
-If nothing is wrong, when the execution finishes, you will see `Proof finished`, meaning that `inv1` is proved with that proof script. 
+If nothing is wrong, when the execution finishes, you will see `PROOF FINISHED!`, meaning that `inv1` is proved with that proof script. 
 Note that you need to make sure that the paths are correct. You may need to use the absolute paths instead of the relative paths as above.
 
 
