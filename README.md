@@ -15,7 +15,7 @@ For CafeInMaude, you need to clone the repo.
 After that, move to the next step to execute proof scores.
 
 ## Executing proof scripts
-Once intalled CafeInMaude, you can try to run the proof scripts with CiMPA, a part of CafeInMaude. For example, to execute the proof script of `inv1`, we use the following commands:
+Once installed CafeInMaude, you can try to run the proof scripts with CiMPA, a part of CafeInMaude. For example, to execute the proof script of `inv1`, we use the following commands:
 
 ```
 maude -allow-files path-to-CafeInMaude/src/cafeInMaude.maude
@@ -24,14 +24,14 @@ load generated-proofscripts/inv1.cafe .
 ```
 
 where the first command starts the CafeInMaude environment (`path-to-CafeInMaude` is the path of the CafeInMaude folder),
-the second command load the specification,
+the second command loads the specification,
 and the last command loads the proof scripts.
 If nothing is wrong, when the execution finishes, you will see `Proof finished`, meaning that `inv1` is proved with that proof script. 
 Note that you need to make sure that the paths are correct. You may need to use the absolute paths instead of the relative paths as above.
 
 
 ## Generating proof scripts
-To re-generate the proof scripts, CiMPG is used with commands we already provided.
+To re-generate the proof scripts, CiMPG is used with the commands we already provided.
 For example, to generate the proof script of `inv1` again, we use the following commands:
 
 ```
